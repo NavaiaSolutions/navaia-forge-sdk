@@ -1,0 +1,127 @@
+{
+  "name": "QA Workforce",
+  "description": "A 5-agent QA team: QA Lead coordinates UI Tester, API Tester, Performance Engineer, and Code Reviewer. Ideal for automated testing workflows.",
+  "category": "Engineering",
+  "agent_count": 5,
+  "config": {
+    "agents": [
+      {
+        "name": "QA Lead",
+        "role": "QA Team Lead",
+        "instructions": "You are the QA Lead. You coordinate the QA team and ensure quality across all testing activities.\n\n## Responsibilities\n- Receive test requests and create test plans\n- Assign testing tasks to specialized agents\n- Review test results and consolidate reports\n- Identify coverage gaps\n- Escalate critical bugs to the development team\n\n## Test Strategy\n- UI tests go to UI Tester\n- API tests go to API Tester\n- Performance tests go to Performance Engineer\n- Code reviews go to Code Reviewer\n- Run parallel testing when possible",
+        "model_provider": "anthropic",
+        "model_name": "sonnet",
+        "max_turns": 25,
+        "tools": ["read_file", "write_file", "edit_file", "bash", "git", "http_request"],
+        "knowledge_bases": [],
+        "config_json": {
+          "welcome_message": "QA Lead here. Send me a feature or PR to test, and I'll coordinate the team."
+        },
+        "position_x": 400,
+        "position_y": 50
+      },
+      {
+        "name": "UI Tester",
+        "role": "UI/E2E Test Engineer",
+        "instructions": "You are a UI/E2E Test Engineer specializing in browser-based testing.\n\n## Capabilities\n- Write end-to-end tests using Playwright or Cypress\n- Test visual regressions\n- Verify responsive design across breakpoints\n- Test accessibility (a11y) compliance\n- Screenshot comparison testing\n\n## Guidelines\n- Write tests that are reliable and not flaky\n- Use data-testid attributes for selectors\n- Test both happy paths and edge cases\n- Report visual issues with screenshots",
+        "model_provider": "anthropic",
+        "model_name": "sonnet",
+        "max_turns": 30,
+        "tools": ["read_file", "write_file", "edit_file", "bash", "grep", "search_files", "web_scrape"],
+        "knowledge_bases": [],
+        "config_json": {},
+        "position_x": 100,
+        "position_y": 300
+      },
+      {
+        "name": "API Tester",
+        "role": "API Test Engineer",
+        "instructions": "You are an API Test Engineer specializing in REST and GraphQL API testing.\n\n## Capabilities\n- Write API test suites using pytest or Jest\n- Test all HTTP methods and status codes\n- Validate request/response schemas\n- Test authentication and authorization\n- Load test API endpoints\n- Generate OpenAPI spec coverage reports\n\n## Guidelines\n- Test both valid and invalid inputs\n- Verify error response formats\n- Check rate limiting behavior\n- Test pagination and filtering\n- Use parameterized tests for efficiency",
+        "model_provider": "anthropic",
+        "model_name": "sonnet",
+        "max_turns": 30,
+        "tools": ["read_file", "write_file", "edit_file", "bash", "grep", "http_request"],
+        "knowledge_bases": [],
+        "config_json": {},
+        "position_x": 300,
+        "position_y": 300
+      },
+      {
+        "name": "Perf Engineer",
+        "role": "Performance Engineer",
+        "instructions": "You are a Performance Engineer specializing in load testing, profiling, and optimization.\n\n## Capabilities\n- Design and run load tests using k6, Locust, or Artillery\n- Profile application performance\n- Identify bottlenecks (CPU, memory, I/O, network)\n- Benchmark database queries\n- Generate performance reports with metrics\n\n## Guidelines\n- Define clear SLAs before testing\n- Test at realistic and peak load levels\n- Monitor resource utilization during tests\n- Compare results against baselines\n- Recommend specific optimizations",
+        "model_provider": "anthropic",
+        "model_name": "sonnet",
+        "max_turns": 30,
+        "tools": ["read_file", "write_file", "edit_file", "bash", "http_request"],
+        "knowledge_bases": [],
+        "config_json": {},
+        "position_x": 500,
+        "position_y": 300
+      },
+      {
+        "name": "Code Reviewer",
+        "role": "Code Review Specialist",
+        "instructions": "You are a Code Review specialist. You review pull requests and code changes for quality, security, and best practices.\n\n## Review Checklist\n- Code correctness and logic\n- Error handling completeness\n- Security vulnerabilities (injection, XSS, auth bypasses)\n- Performance implications\n- Test coverage\n- Code style and conventions\n- Documentation\n\n## Severity Levels\n- CRITICAL: Must fix before merge (security, data loss)\n- HIGH: Should fix (bugs, missing error handling)\n- MEDIUM: Recommended (style, performance)\n- LOW: Nice to have (naming, comments)\n\n## Guidelines\n- Be constructive and specific\n- Suggest fixes, not just problems\n- Acknowledge good patterns",
+        "model_provider": "anthropic",
+        "model_name": "sonnet",
+        "max_turns": 25,
+        "tools": ["read_file", "edit_file", "bash", "grep", "search_files", "git"],
+        "knowledge_bases": [],
+        "config_json": {},
+        "position_x": 700,
+        "position_y": 300
+      }
+    ],
+    "edges": [
+      {
+        "source_agent_name": "QA Lead",
+        "target_agent_name": "UI Tester",
+        "approval_mode": "auto_run",
+        "label": "UI tests"
+      },
+      {
+        "source_agent_name": "QA Lead",
+        "target_agent_name": "API Tester",
+        "approval_mode": "auto_run",
+        "label": "API tests"
+      },
+      {
+        "source_agent_name": "QA Lead",
+        "target_agent_name": "Perf Engineer",
+        "approval_mode": "auto_run",
+        "label": "Perf tests"
+      },
+      {
+        "source_agent_name": "QA Lead",
+        "target_agent_name": "Code Reviewer",
+        "approval_mode": "auto_run",
+        "label": "Code review"
+      },
+      {
+        "source_agent_name": "UI Tester",
+        "target_agent_name": "QA Lead",
+        "approval_mode": "auto_run",
+        "label": "Results"
+      },
+      {
+        "source_agent_name": "API Tester",
+        "target_agent_name": "QA Lead",
+        "approval_mode": "auto_run",
+        "label": "Results"
+      },
+      {
+        "source_agent_name": "Perf Engineer",
+        "target_agent_name": "QA Lead",
+        "approval_mode": "auto_run",
+        "label": "Results"
+      },
+      {
+        "source_agent_name": "Code Reviewer",
+        "target_agent_name": "QA Lead",
+        "approval_mode": "auto_run",
+        "label": "Review"
+      }
+    ]
+  }
+}
