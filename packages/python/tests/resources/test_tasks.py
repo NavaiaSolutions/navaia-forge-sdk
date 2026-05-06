@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from navaia_forge import Task
+from navaia_forge import NavaiaForgeError, Task
 
 
 @pytest.fixture
@@ -75,3 +75,82 @@ def test_approve_task(httpx_mock, client, base_url, task_payload) -> None:
     )
     task = client.tasks.approve("tk_1")
     assert task.status == "in_progress"
+
+
+@pytest.mark.integration
+def test_list_tasks(httpx_mock, client, base_url, task_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/workforces/wf_1/tasks",
+        method="GET",
+        json={"items": [task_payload], "total": 1},
+    )
+    tasks = client.tasks.list("wf_1")
+    assert tasks[0].id == "tk_1"
+
+
+@pytest.mark.integration
+def test_list_tasks_with_status(httpx_mock, client, base_url, task_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/workforces/wf_1/tasks?status=done",
+        method="GET",
+        json={"items": [{**task_payload, "status": "done"}], "total": 1},
+    )
+    tasks = client.tasks.list("wf_1", status="done")
+    assert tasks[0].status == "done"
+
+
+@pytest.mark.integration
+def test_create_task_with_agent_and_metadata(
+    httpx_mock, client, base_url, task_payload
+) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks",
+        method="POST",
+        json={**task_payload, "agent_id": "ag_1", "metadata_json": {"k": "v"}},
+    )
+    task = client.tasks.create(
+        workforce_id="wf_1",
+        title="Review PR",
+        agent_id="ag_1",
+        metadata={"k": "v"},
+    )
+    assert task.agent_id == "ag_1"
+    body = httpx_mock.get_requests()[0].read().decode()
+    assert "ag_1" in body
+    assert "metadata_json" in body
+
+
+@pytest.mark.integration
+def test_reject_task(httpx_mock, client, base_url, task_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks/tk_1/reject",
+        method="POST",
+        json={**task_payload, "status": "rejected"},
+    )
+    task = client.tasks.reject("tk_1", reason="not needed")
+    assert task.status == "rejected"
+
+
+@pytest.mark.integration
+def test_retry_task(httpx_mock, client, base_url, task_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks/tk_1/retry",
+        method="POST",
+        json={**task_payload, "status": "pending", "retry_count": 1},
+    )
+    task = client.tasks.retry("tk_1")
+    assert task.retry_count == 1
+
+
+@pytest.mark.integration
+def test_wait_for_completion_times_out(
+    httpx_mock, client, base_url, task_payload
+) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks/tk_1",
+        method="GET",
+        json={**task_payload, "status": "pending"},
+        is_reusable=True,
+    )
+    with pytest.raises(NavaiaForgeError):
+        client.tasks.wait_for_completion("tk_1", poll_interval=0.0, timeout=0.05)

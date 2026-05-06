@@ -61,6 +61,48 @@ def test_create_sends_correct_body(httpx_mock, client, base_url, workforce_paylo
 
 
 @pytest.mark.integration
+def test_create_with_template_and_config(httpx_mock, client, base_url, workforce_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/workforces",
+        method="POST",
+        json=workforce_payload,
+    )
+    wf = client.workforces.create(
+        "From template",
+        template_id="tpl_1",
+        config_json={"key": "value"},
+    )
+    assert wf.id == "wf_1"
+    body = httpx_mock.get_requests()[0].read().decode()
+    assert "tpl_1" in body
+    assert "value" in body
+
+
+@pytest.mark.integration
+def test_update_uses_put(httpx_mock, client, base_url, workforce_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/workforces/wf_1",
+        method="PUT",
+        json={**workforce_payload, "name": "renamed"},
+    )
+    wf = client.workforces.update("wf_1", name="renamed")
+    assert wf.name == "renamed"
+
+
+@pytest.mark.integration
+def test_get_full(httpx_mock, client, base_url, workforce_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/workforces/wf_1/full",
+        method="GET",
+        json={**workforce_payload, "agents": [], "edges": []},
+    )
+    full = client.workforces.get_full("wf_1")
+    assert full.id == "wf_1"
+    assert full.agents == []
+    assert full.edges == []
+
+
+@pytest.mark.integration
 def test_delete_returns_none(httpx_mock, client, base_url) -> None:
     httpx_mock.add_response(
         url=f"{base_url}/api/v1/workforces/wf_1",
