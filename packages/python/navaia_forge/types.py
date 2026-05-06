@@ -372,14 +372,79 @@ class Integration(_Base):
 
 
 class TokenUsage(_Base):
+    """Single token-usage event logged via ``POST /token-usage``."""
+
     id: str
-    agent_id: str
+    agent_id: str | None = None
     task_id: str | None = None
     model: str
     input_tokens: int = 0
     output_tokens: int = 0
-    cost_weighted: float = 0
+    total_tokens: int = 0
+    weighted_tokens: int = 0
+    cost_usd: float = 0.0
+    duration_ms: int = 0
+    date_key: str = ""
     created_at: str | None = None
+
+
+class AgentMetrics(_Base):
+    """Per-agent rolled-up metrics row."""
+
+    id: str
+    agent_id: str
+    period: str = "daily"
+    period_start: str | None = None
+    tasks_completed: int = 0
+    tasks_failed: int = 0
+    avg_duration_ms: float = 0.0
+    total_tokens: int = 0
+    total_cost_usd: float = 0.0
+    quality_score: float = 0.0
+    created_at: str | None = None
+
+
+class RLEvaluation(_Base):
+    """Reinforcement-learning evaluation entry for an agent."""
+
+    id: str
+    agent_id: str
+    batch: int = 0
+    score_delta: float = 0.0
+    cumulative_score: float = 0.0
+    quality_rating: int = 0
+    token_efficiency: float = 0.0
+    summary: str = ""
+    created_at: str | None = None
+
+
+class AgentCostBreakdown(_Base):
+    agent_id: str
+    agent_name: str = ""
+    total_tokens: int = 0
+    weighted_tokens: int = 0
+    cost_usd: float = 0.0
+    call_count: int = 0
+
+
+class ModelCostBreakdown(_Base):
+    model: str
+    total_tokens: int = 0
+    weighted_tokens: int = 0
+    cost_usd: float = 0.0
+    call_count: int = 0
+
+
+class CostSummary(_Base):
+    """Cost rollup returned by ``GET /workforces/{id}/cost``."""
+
+    workforce_id: str
+    period_days: int = 30
+    total_tokens: int = 0
+    total_weighted_tokens: int = 0
+    total_cost_usd: float = 0.0
+    by_agent: list[AgentCostBreakdown] = Field(default_factory=list)
+    by_model: list[ModelCostBreakdown] = Field(default_factory=list)
 
 
 class MetricsSummary(_Base):
