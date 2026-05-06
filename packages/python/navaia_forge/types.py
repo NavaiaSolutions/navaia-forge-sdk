@@ -356,16 +356,42 @@ class WorkforceToolLink(_Base):
 
 
 class Integration(_Base):
+    """An installed integration plugin tied to a workforce."""
+
     id: str
     workforce_id: str
-    name: str
-    type: str
-    category: str = ""
-    status: IntegrationStatus = "disconnected"
+    plugin_name: str
+    display_name: str = ""
     config_json: dict[str, Any] = Field(default_factory=dict)
-    icon_url: str | None = None
+    status: str = "inactive"
+    last_error: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
+
+
+class AvailablePlugin(_Base):
+    """A registered integration plugin available to install."""
+
+    name: str
+    display_name: str = ""
+    description: str = ""
+    version: str = ""
+    active: bool = False
+    config_schema: dict[str, Any] = Field(default_factory=dict)
+
+
+class SetupOptions(_Base):
+    """Which onboarding paths are enabled in the deployment."""
+
+    navaia_cloud_enabled: bool = False
+    claude_cli_enabled: bool = False
+
+
+class SetupValidateResult(_Base):
+    """Result of ``POST /setup/validate``."""
+
+    status: Literal["healthy", "unhealthy"]
+    message: str = ""
 
 
 # ── Observability ───────────────────────────────────────────────
