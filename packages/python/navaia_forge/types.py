@@ -271,6 +271,32 @@ class KnowledgeDocument(_Base):
     created_at: str | None = None
 
 
+class SearchResult(_Base):
+    """A single retrieved chunk from a knowledge-base search."""
+
+    content: str
+    score: float
+    document_id: str
+    filename: str = ""
+    chunk_index: int = 0
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SearchResponse(_Base):
+    """Envelope for ``POST /knowledge-bases/{kb_id}/search``."""
+
+    results: list[SearchResult] = Field(default_factory=list)
+    query: str = ""
+    total: int = 0
+
+
+class WorkforceKnowledgeBaseLink(_Base):
+    """Attachment record returned when adding a KB to a workforce."""
+
+    knowledge_base: KnowledgeBase
+    added_at: str | None = None
+
+
 # ── Integrations ────────────────────────────────────────────────
 
 
