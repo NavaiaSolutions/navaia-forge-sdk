@@ -1,27 +1,175 @@
 # NavaiaForge SDK
 
-**Build, deploy, and orchestrate AI workforces — programmatically.**
+**Build AI workforces that work like a team — from code, from the UI, or both.**
 
 [![npm version](https://img.shields.io/npm/v/@navaia/forge)](https://www.npmjs.com/package/@navaia/forge)
 [![PyPI version](https://img.shields.io/pypi/v/navaia-forge)](https://pypi.org/project/navaia-forge/)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
-Official SDKs for the [NavaiaForge](https://navaia.com) platform.
+NavaiaForge is a platform for building **multi-agent AI workforces** — groups of specialized agents that share context, hand off work to each other, draw on shared knowledge, call shared tools, and stream results back to you in real time. This repo contains the official **TypeScript** and **Python** SDKs.
 
-The SDK is a **first-class client for the same NavaiaForge backend that powers the web UI**. You can use it:
+The SDK is a complete client over the same backend that powers the NavaiaForge dashboard. Use it:
 
-- **Standalone** — drive everything from code, scripts, CI, notebooks, or your own backend; no NavaiaForge UI required.
-- **Alongside the UI** — anything you create in the dashboard is reachable from the SDK, and vice versa. Build a workforce in code, monitor it in the browser. Spin one up in the UI, run it from a cron job. Same workforces, same agents, same data.
+- **Standalone** — run everything from code: scripts, services, CI, notebooks, internal tools. No dashboard required.
+- **Alongside the UI** — anything you build in code appears in the dashboard immediately, and anything built in the dashboard is reachable from the SDK. Same workforces, same agents, same tasks. Two views over one backend.
 
 ---
 
-## Why use it
+## Why a workforce, not just an agent?
 
-- **Headless automation.** Run agents from CI, schedulers, or your existing services without touching a browser.
-- **Real-time orchestration.** Tasks, agent status, and chat messages stream over a WebSocket so your code reacts the moment something happens.
-- **Typed end-to-end.** TypeScript types and Pydantic v2 models for every resource — IDE autocomplete and runtime validation included.
-- **Same surface as the UI.** Every workforce, agent, task, conversation, knowledge base, integration, tool, and template the dashboard exposes is available here.
-- **Extensible.** Build custom UIs, internal tools, dashboards, Slack bots, agents-as-API, automated pipelines — all on top of the official client.
+A single LLM call solves a single prompt. Real work is rarely a single prompt. NavaiaForge models work the way teams actually do it:
+
+- **Many specialized agents instead of one generalist.** A reviewer, a tester, a writer, a researcher — each with its own role, instructions, and model.
+- **Edges that route work between them.** When the reviewer is done, the result flows to the tester. You define the graph; the workforce executes it.
+- **Shared knowledge.** Attach knowledge bases (PDFs, docs, RAG-indexed sources) to a workforce so every agent can ground its answers in the same facts.
+- **Shared tools.** Give the team HTTP endpoints, MCP servers, code executors, custom integrations — once, at the workforce level.
+- **One coordinator.** Submit a task to the workforce, not to a specific agent. The platform routes, executes, retries, and streams events back.
+
+The SDK exposes every one of those primitives directly.
+
+---
+
+## What the SDK lets you do
+
+### Build the team
+
+```python
+wf = client.workforces.create(name="Code Review Team")
+
+reviewer = client.agents.create(
+    workforce_id=wf.id,
+    name="Reviewer",
+    role="review",
+    instructions="Review pull requests for correctness, style, and security.",
+    model_provider="anthropic", model_name="sonnet",
+)
+tester = client.agents.create(
+    workforce_id=wf.id,
+    name="Tester",
+    role="qa",
+    instructions="Generate and run tests against changes the reviewer approves.",
+    model_provider="anthropic", model_name="sonnet",
+)
+
+# Wire reviewer → tester so approved diffs flow downstream automatically.
+client.workforces.create_edge(
+    workforce_id=wf.id,
+    source_agent_id=reviewer.id,
+    target_agent_id=tester.id,
+)
+```
+
+### Give the team shared knowledge
+
+```python
+kb = client.knowledge.create(name="Product Docs")
+client.knowledge.upload_document(kb_id=kb.id, file_path="./handbook.pdf")
+client.workforces.attach_knowledge(workforce_id=wf.id, knowledge_base_id=kb.id)
+# Every agent in the workforce can now retrieve from "Product Docs" via RAG.
+```
+
+### Give the team shared tools
+
+```python
+tool = client.tools.create(
+    name="github-search",
+    type="http",
+    config={"base_url": "https://api.github.com", "auth": "bearer"},
+)
+client.tools.attach_to_workforce(tool_id=tool.id, workforce_id=wf.id)
+```
+
+### Run a task across the team
+
+```python
+task = client.tasks.create(workforce_id=wf.id, title="Review PR #482 and add tests")
+final = client.tasks.wait_for_completion(task.id)  # blocks with smart polling
+print(final.status, final.result)
+```
+
+### Watch it happen in real time
+
+```python
+from navaia_forge import NavaiaForgeWs, HttpConfig
+
+ws = NavaiaForgeWs(HttpConfig(base_url="https://api.navaia.com", api_key="nf_..."))
+ws.on("task:status",   lambda e: print("task:",   e["task_id"], e["status"]))
+ws.on("agent:status",  lambda e: print("agent:",  e["agent_id"], e["status"]))
+ws.on("chat:message",  lambda e: print(e["role"], e["content"]))
+ws.connect()
+ws.run_forever()
+```
+
+### Skip the boilerplate with templates
+
+```python
+result = client.templates.instantiate(template_id="engineering-workforce", name="My Team")
+# Pre-built workforces (engineering, QA, generalist) — instantiated and ready to run.
+```
+
+### Have a conversation with an agent
+
+```python
+conv = client.conversations.create(workforce_id=wf.id)
+client.conversations.send_message(conv.id, content="What did the reviewer flag?", agent_id=reviewer.id)
+for msg in client.conversations.messages(conv.id):
+    print(msg.role, msg.content)
+```
+
+### Watch your costs and quality
+
+```python
+client.observability.summary()                       # tokens / spend overview
+client.observability.cost(group_by="model")          # cost broken down by model
+client.observability.agent_metrics(agent_id=reviewer.id)        # per-agent perf
+client.observability.agent_evaluations(agent_id=reviewer.id)    # RL evals
+```
+
+### Plug in third-party services
+
+```python
+client.integrations.list_plugins()  # browse available plugins (Slack, GitHub, Linear, ...)
+client.integrations.create(plugin_name="slack", display_name="Eng Slack", config={...})
+```
+
+### Authenticate users in your own UI
+
+```python
+pair = client.auth.login(email="alice@acme.com", password="...")
+client.auth.create_key("ci-runner")     # mint API keys for headless services
+client.auth.google_login_url()           # build OAuth start URLs for your frontend
+```
+
+---
+
+## Feature catalog
+
+Every namespace below works the same way in TypeScript (`nf.*`) and Python (`client.*`).
+
+| Namespace | What it does | Why you'd use it |
+|---|---|---|
+| **workforces** | CRUD workforces; manage edges between agents; link tools and knowledge bases | Define the team and how work flows through it |
+| **agents** | Full CRUD; browse `featured`, `clone`, `export`, attach/detach to workforces, list members | Compose specialists with their own roles, models, and instructions |
+| **tasks** | Submit, approve, reject, retry, stream logs, `wait_for_completion` | Hand work to the team and get results — sync or async |
+| **conversations** | Open chats with workforces, send messages targeted at specific agents | Build chat UIs, support bots, interactive assistants |
+| **knowledge** | Knowledge bases, document upload, semantic search, featured KBs, downloads | Ground agents in your own data via RAG |
+| **templates** | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice; instantiate from a blueprint |
+| **tools** | Full CRUD over tools (HTTP, MCP, code-exec, custom), featured discovery, attach/detach | Give the workforce hands — let agents call APIs, run code, hit external systems |
+| **integrations** | Manage plugin integrations: list installed, browse `list_plugins`, CRUD | Connect Slack, GitHub, Linear, and other third-party services |
+| **setup** | `options`, `validate`, `complete` | First-run onboarding, provider configuration, key validation |
+| **observability** | Token-usage summary, cost breakdowns, per-agent metrics, RL evaluations, manual usage logging | See what the team is doing, what it costs, and where it's failing |
+| **auth** | `me`, register/login/refresh, API-key creation/validation, OAuth helpers | Power your own UI on top of NavaiaForge |
+| **WebSocket** (`nf.ws` / `NavaiaForgeWs`) | Real-time streams: task status, agent status, chat messages, system events | React the moment something happens — no polling |
+
+---
+
+## Who it helps
+
+- **Engineers building AI features** — typed client, IDE autocomplete, no need to hand-write HTTP plumbing.
+- **Teams running agents in production** — observability, cost tracking, evaluations, and retries are first-class.
+- **People building custom UIs on top of NavaiaForge** — auth flows, conversations, and the WebSocket stream let you build a fully custom frontend.
+- **Automation owners** — drive everything from CI, schedulers, or your existing services. No browser in the loop.
+- **Researchers & power users** — drop into a notebook, spin up a workforce, iterate fast. Then promote to production unchanged.
 
 ---
 
@@ -33,18 +181,6 @@ The SDK is a **first-class client for the same NavaiaForge backend that powers t
 npm install @navaia/forge
 ```
 
-### Python
-
-```bash
-pip install navaia-forge
-```
-
----
-
-## Quick Start
-
-### TypeScript
-
 ```ts
 import { NavaiaForge } from "@navaia/forge";
 
@@ -53,11 +189,7 @@ const nf = new NavaiaForge({
   baseUrl: "https://api.navaia.com",
 });
 
-const workforce = await nf.workforces.create({
-  name: "Research Team",
-  description: "Multi-agent research assistant",
-});
-
+const workforce = await nf.workforces.create({ name: "Research Team" });
 const agent = await nf.agents.create({
   workforce_id: workforce.id,
   name: "Researcher",
@@ -66,18 +198,20 @@ const agent = await nf.agents.create({
   model_provider: "anthropic",
   model_name: "sonnet",
 });
-
 const task = await nf.tasks.create({
   workforce_id: workforce.id,
   agent_id: agent.id,
   title: "Survey 2025 LLM efficiency papers",
 });
-
 const result = await nf.tasks.waitForCompletion(task.id);
 console.log(result.result);
 ```
 
 ### Python
+
+```bash
+pip install navaia-forge
+```
 
 ```python
 from navaia_forge import NavaiaForgeClient
@@ -87,107 +221,24 @@ client = NavaiaForgeClient(
     api_key="nf_your_api_key",
 )
 
-workforce = client.workforces.create(
-    name="Research Team",
-    description="Multi-agent research assistant",
-)
-
+workforce = client.workforces.create(name="Research Team")
 agent = client.agents.create(
     workforce_id=workforce.id,
     name="Researcher",
     role="research",
     instructions="Find and summarize information on any given topic.",
-    model_provider="anthropic",
-    model_name="sonnet",
+    model_provider="anthropic", model_name="sonnet",
 )
-
 task = client.tasks.create(
     workforce_id=workforce.id,
     agent_id=agent.id,
     title="Survey 2025 LLM efficiency papers",
 )
-
 final = client.tasks.wait_for_completion(task.id)
 print(final.status, final.result)
 ```
 
 All Python resource methods return typed [Pydantic v2](https://docs.pydantic.dev/) models. Errors raise `navaia_forge.NavaiaForgeError` (or a subclass: `NotFoundError`, `RateLimitError`, `ValidationError`, `AuthenticationError`, `PermissionError`, `ServerError`, `TimeoutError`).
-
----
-
-## Feature catalog
-
-Every namespace below is available on both `client` (Python) and `nf` (TypeScript).
-
-| Namespace | What you can do |
-|---|---|
-| `workforces` | Create, list, fetch (`get` / `get_full`), update, delete workforces. Manage edges (agent-to-agent connections). Link/unlink tools and knowledge bases. |
-| `agents` | Full CRUD. Browse `featured` agents, `clone` and `export` agents, attach/detach to workforces, list workforce members. |
-| `tasks` | Submit tasks, `approve`, `reject`, `retry`. Stream task logs. `wait_for_completion()` blocks with configurable polling and timeout. |
-| `conversations` | Open conversations against a workforce, list message history, send messages targeted at a specific agent. |
-| `knowledge` | Create knowledge bases, upload documents, semantic `search`, `featured` lists, document `download`, deletion. |
-| `templates` | Browse and instantiate workforce templates; nested `templates.agents` for agent templates. Build your own templates and publish them. |
-| `tools` | Full CRUD over tools (HTTP, MCP, code-executor, etc.), `featured` discovery, attach/detach to workforces. |
-| `integrations` | Manage third-party plugin integrations: list installed, browse `list_plugins()`, create/update/delete. |
-| `setup` | Onboarding helpers: read setup `options`, `validate` an API key/provider config, `complete` first-run setup. |
-| `observability` | Token-usage `summary`, multi-dimensional `cost` breakdowns, per-agent `agent_metrics`, RL `agent_evaluations`, manual `log_token_usage`. |
-| `auth` | `me`, email/password `register` / `login` / `refresh`, API-key `create_key` / `validate`, helpers for Google/GitHub OAuth start URLs. |
-
-### Real-time events (WebSocket)
-
-Both SDKs ship a WebSocket client that subscribes to the same event stream the dashboard uses.
-
-```ts
-nf.ws.on("task:status", (evt) => console.log(evt.task_id, evt.status));
-nf.ws.on("agent:status", (evt) => console.log(evt.agent_id, evt.status));
-nf.ws.on("chat:message", (evt) => console.log(evt.role, evt.content));
-nf.ws.connect();
-```
-
-```python
-from navaia_forge import NavaiaForgeWs, HttpConfig
-
-ws = NavaiaForgeWs(HttpConfig(base_url="https://api.navaia.com", api_key="nf_..."))
-ws.on("task:status", lambda e: print(e["task_id"], e["status"]))
-ws.connect()
-ws.run_forever()
-```
-
----
-
-## Common workflows
-
-### Build a multi-agent workforce in code
-
-```python
-wf = client.workforces.create(name="Code Review Team")
-reviewer = client.agents.create(workforce_id=wf.id, name="Reviewer", role="review", instructions="...")
-tester = client.agents.create(workforce_id=wf.id, name="Tester", role="qa", instructions="...")
-client.workforces.create_edge(workforce_id=wf.id, source_agent_id=reviewer.id, target_agent_id=tester.id)
-```
-
-### Use a pre-built template
-
-```python
-result = client.templates.instantiate(template_id="engineering-workforce", name="My Team")
-print(result.workforce_id)
-```
-
-### Ship a knowledge-grounded agent
-
-```python
-kb = client.knowledge.create(name="Product Docs")
-client.knowledge.upload_document(kb_id=kb.id, file_path="./handbook.pdf")
-client.workforces.attach_knowledge(workforce_id=wf.id, knowledge_base_id=kb.id)
-```
-
-### Drive everything from CI
-
-API keys are first-class. Generate one with `client.auth.create_key("ci")` (or in the dashboard), drop it into your CI secret store, and the rest is just HTTP.
-
-### Use it next to the UI
-
-Anything you build with the SDK shows up in the NavaiaForge dashboard immediately — same workforces, agents, tasks, conversations, knowledge, integrations. Run a long-running task from the UI, monitor it from a notebook. Spin a workforce up in code, hand the URL to a teammate. The SDK and UI are two views over one backend.
 
 ---
 
@@ -198,8 +249,6 @@ Pre-built workforce templates live in [`templates/`](./templates/):
 - **Engineering Workforce** — code review, testing, deployment agents
 - **Navaia Workforce** — general-purpose multi-agent team
 - **QA Workforce** — automated testing and quality assurance
-
-Use them via:
 
 ```ts
 const result = await nf.templates.instantiate("engineering-workforce", "My Team");
