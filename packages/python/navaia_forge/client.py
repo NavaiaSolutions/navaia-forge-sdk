@@ -26,6 +26,7 @@ import httpx
 from .http import HttpClient, HttpConfig
 from .resources import (
     AgentsResource,
+    AuthResource,
     ConversationsResource,
     IntegrationsResource,
     KnowledgeResource,
@@ -67,6 +68,7 @@ class NavaiaForgeClient:
         self.integrations = IntegrationsResource(self._http)
         self.tools = ToolsResource(self._http)
         self.setup = SetupResource(self._http)
+        self.auth = AuthResource(self._http)
 
     # ── Configuration accessors ───────────────────────────────
 

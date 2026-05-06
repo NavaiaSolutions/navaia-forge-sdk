@@ -569,6 +569,48 @@ class TemplateInstantiateResult(_Base):
     edges_created: int = 0
 
 
+# ── Auth ────────────────────────────────────────────────────────
+
+
+class User(_Base):
+    """Authenticated user profile (``GET /auth/me``)."""
+
+    id: str
+    email: str
+    name: str
+    avatar_url: str | None = None
+    provider: str = ""
+    is_admin: bool = False
+    onboarding_completed: bool = False
+    created_at: str | None = None
+
+
+class TokenPair(_Base):
+    """JWT access/refresh pair returned by login/register/refresh."""
+
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    user: User
+
+
+class ApiKeyCreated(_Base):
+    """Result of ``POST /auth/keys`` — the plaintext key shown only once."""
+
+    api_key: str
+    key_hash: str
+    name: str = ""
+    message: str = ""
+
+
+class ApiKeyValidation(_Base):
+    """Result of ``GET /auth/validate``."""
+
+    valid: bool
+    user_id: str
+    role: str = ""
+
+
 # ── Composite (workforce + agents + edges) ──────────────────────
 
 
