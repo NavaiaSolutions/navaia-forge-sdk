@@ -297,6 +297,52 @@ class WorkforceKnowledgeBaseLink(_Base):
     added_at: str | None = None
 
 
+# ── Tools ───────────────────────────────────────────────────────
+
+
+class Tool(_Base):
+    """A reusable tool definition (registered with the platform)."""
+
+    id: str
+    owner_id: str | None = None
+    name: str
+    description: str = ""
+    kind: str
+    icon: str | None = None
+    integration_id: str | None = None
+    config_json: dict[str, Any] = Field(default_factory=dict)
+    is_featured: bool = False
+    is_template: bool = False
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+class ToolCreate(_Base):
+    name: str
+    description: str = ""
+    kind: str
+    icon: str | None = None
+    integration_id: str | None = None
+    config_json: dict[str, Any] | None = None
+
+
+class ToolUpdate(_Base):
+    name: str | None = None
+    description: str | None = None
+    kind: str | None = None
+    icon: str | None = None
+    integration_id: str | None = None
+    config_json: dict[str, Any] | None = None
+
+
+class WorkforceToolLink(_Base):
+    """Attachment record when adding a tool to a workforce."""
+
+    tool: Tool
+    override_json: dict[str, Any] = Field(default_factory=dict)
+    added_at: str | None = None
+
+
 # ── Integrations ────────────────────────────────────────────────
 
 

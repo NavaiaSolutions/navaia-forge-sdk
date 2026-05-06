@@ -7,6 +7,7 @@ from .knowledge import KnowledgeResource
 from .observability import ObservabilityResource
 from .tasks import TasksResource
 from .templates import TemplatesResource
+from .tools import ToolsResource
 from .workforces import WorkforcesResource
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "ObservabilityResource",
     "TasksResource",
     "TemplatesResource",
+    "ToolsResource",
     "WorkforcesResource",
 ]
