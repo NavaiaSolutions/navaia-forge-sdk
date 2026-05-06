@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from ..types import Agent, ModelProvider
+from ..types import Agent, ModelProvider, WorkforceMember
 from ._base import ResourceBase, parse_list, parse_model
 
 
 class AgentsResource(ResourceBase):
-    """CRUD operations for agents."""
+    """CRUD + library operations for agents."""
+
+    # ── Core CRUD ────────────────────────────────────────────────
 
     def list(self, workforce_id: str | None = None) -> list[Agent]:
         """List agents, optionally scoped to a workforce."""
@@ -17,6 +19,10 @@ class AgentsResource(ResourceBase):
         if workforce_id is not None:
             params["workforce_id"] = workforce_id
         return parse_list(Agent, self._http.get_list("/agents", params=params or None))
+
+    def list_featured(self) -> list[Agent]:
+        """List featured / template agents."""
+        return parse_list(Agent, self._http.get_list("/agents/featured"))
 
     def get(self, agent_id: str) -> Agent:
         """Fetch a single agent by id."""
@@ -57,9 +63,59 @@ class AgentsResource(ResourceBase):
         return parse_model(Agent, self._http.post("/agents", body))
 
     def update(self, agent_id: str, **fields: Any) -> Agent:
-        """Patch the agent with the supplied fields."""
-        return parse_model(Agent, self._http.patch(f"/agents/{agent_id}", fields))
+        """Update the agent with the supplied fields (backend uses PUT)."""
+        return parse_model(Agent, self._http.put(f"/agents/{agent_id}", fields))
 
     def delete(self, agent_id: str) -> None:
         """Delete an agent."""
         self._http.delete(f"/agents/{agent_id}")
+
+    # ── Library operations ──────────────────────────────────────
+
+    def clone(self, agent_id: str, *, name: str | None = None) -> Agent:
+        """Clone a featured/template agent into the user's library."""
+        body: dict[str, Any] = {}
+        if name is not None:
+            body["name"] = name
+        return parse_model(
+            Agent, self._http.post(f"/agents/{agent_id}/clone", body)
+        )
+
+    def export(self, agent_id: str) -> dict[str, Any]:
+        """Export an agent (returns the raw export envelope)."""
+        result = self._http.get(f"/agents/{agent_id}/export")
+        return result if isinstance(result, dict) else {}
+
+    # ── Workforce membership ────────────────────────────────────
+
+    def list_workforce_members(self, workforce_id: str) -> list[WorkforceMember]:
+        """List the agents attached to a workforce, with per-workforce metadata."""
+        return parse_list(
+            WorkforceMember,
+            self._http.get(f"/workforces/{workforce_id}/members"),
+        )
+
+    def attach_to_workforce(
+        self,
+        workforce_id: str,
+        agent_id: str,
+        *,
+        override_json: dict[str, Any] | None = None,
+        position_x: float = 0.0,
+        position_y: float = 0.0,
+    ) -> WorkforceMember:
+        """Attach a library agent to a workforce."""
+        body: dict[str, Any] = {
+            "agent_id": agent_id,
+            "override_json": override_json or {},
+            "position_x": position_x,
+            "position_y": position_y,
+        }
+        return parse_model(
+            WorkforceMember,
+            self._http.post(f"/workforces/{workforce_id}/members", body),
+        )
+
+    def detach_from_workforce(self, workforce_id: str, agent_id: str) -> None:
+        """Detach an agent from a workforce."""
+        self._http.delete(f"/workforces/{workforce_id}/members/{agent_id}")

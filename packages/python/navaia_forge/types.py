@@ -160,6 +160,15 @@ class AgentCreate(_Base):
     position_y: float = 0
 
 
+class WorkforceMember(_Base):
+    """An agent attached to a workforce with per-workforce overrides."""
+
+    agent: Agent
+    override_json: dict[str, Any] = Field(default_factory=dict)
+    position_x: float = 0.0
+    position_y: float = 0.0
+
+
 class AgentUpdate(_Base):
     name: str | None = None
     role: str | None = None
