@@ -390,7 +390,9 @@ class MetricsSummary(_Base):
 # ── Templates ───────────────────────────────────────────────────
 
 
-class Template(_Base):
+class WorkforceTemplate(_Base):
+    """Pre-baked workforce blueprint exposed via ``/workforce-templates``."""
+
     id: str
     name: str
     description: str = ""
@@ -400,8 +402,71 @@ class Template(_Base):
     edges_config: list[dict[str, Any]] = Field(default_factory=list)
     config_json: dict[str, Any] = Field(default_factory=dict)
     is_builtin: bool = False
+    price_cents: int = 0
+    is_premium: bool = False
+    preview_json: dict[str, Any] = Field(default_factory=dict)
     created_at: str | None = None
     agent_count: int | None = None
+
+
+# Alias retained for backward-compatible imports (``from navaia_forge import Template``).
+Template = WorkforceTemplate
+
+
+class WorkforceTemplateCreate(_Base):
+    name: str
+    description: str = ""
+    runtime_mode: str = "claude_max"
+    agents_config: list[dict[str, Any]] | None = None
+    edges_config: list[dict[str, Any]] | None = None
+    config_json: dict[str, Any] | None = None
+    category: str = "general"
+    price_cents: int = 0
+    is_premium: bool = False
+    preview_json: dict[str, Any] | None = None
+
+
+class AgentTemplate(_Base):
+    """Reusable agent blueprint exposed via ``/agent-templates``."""
+
+    id: str
+    name: str
+    role: str
+    description: str = ""
+    instructions: str = ""
+    model_provider: ModelProvider = "anthropic"
+    model_name: str = "sonnet"
+    escalation_model: str | None = None
+    max_turns: int = 25
+    tools: list[dict[str, Any]] = Field(default_factory=list)
+    config_json: dict[str, Any] = Field(default_factory=dict)
+    is_builtin: bool = False
+    category: str = "general"
+    created_at: str | None = None
+
+
+class AgentTemplateCreate(_Base):
+    name: str
+    role: str
+    description: str = ""
+    instructions: str = ""
+    model_provider: ModelProvider = "anthropic"
+    model_name: str = "sonnet"
+    escalation_model: str | None = None
+    max_turns: int = 25
+    tools: list[dict[str, Any]] | None = None
+    config_json: dict[str, Any] | None = None
+    category: str = "general"
+
+
+class TemplateInstantiateResult(_Base):
+    """Lightweight result returned by ``POST /workforce-templates/{id}/instantiate``."""
+
+    id: str
+    name: str
+    description: str = ""
+    agents_created: int = 0
+    edges_created: int = 0
 
 
 # ── Composite (workforce + agents + edges) ──────────────────────
