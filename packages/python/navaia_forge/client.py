@@ -30,6 +30,7 @@ from .resources import (
     IntegrationsResource,
     KnowledgeResource,
     ObservabilityResource,
+    SetupResource,
     TasksResource,
     TemplatesResource,
     ToolsResource,
@@ -65,6 +66,7 @@ class NavaiaForgeClient:
         self.templates = TemplatesResource(self._http)
         self.integrations = IntegrationsResource(self._http)
         self.tools = ToolsResource(self._http)
+        self.setup = SetupResource(self._http)
 
     # ── Configuration accessors ───────────────────────────────
 

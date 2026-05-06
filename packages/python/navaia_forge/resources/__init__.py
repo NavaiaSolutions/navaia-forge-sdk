@@ -5,6 +5,7 @@ from .conversations import ConversationsResource
 from .integrations import IntegrationsResource
 from .knowledge import KnowledgeResource
 from .observability import ObservabilityResource
+from .setup import SetupResource
 from .tasks import TasksResource
 from .templates import TemplatesResource
 from .tools import ToolsResource
@@ -16,6 +17,7 @@ __all__ = [
     "IntegrationsResource",
     "KnowledgeResource",
     "ObservabilityResource",
+    "SetupResource",
     "TasksResource",
     "TemplatesResource",
     "ToolsResource",
