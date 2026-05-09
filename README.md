@@ -271,6 +271,7 @@ Runnable end-to-end examples in [`examples/`](./examples/):
 
 ## Documentation
 
+- [Setup Guide](./docs/SETUP.md) — backend, SDK install, framework interop (LangGraph, LangChain, CrewAI, …)
 - [API Reference](https://docs.navaia.com/api)
 - [Platform Guide](https://docs.navaia.com/guide)
 - [Contributing](./CONTRIBUTING.md)
