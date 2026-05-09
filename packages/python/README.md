@@ -34,7 +34,7 @@ docker compose -f docker-compose.dist.yml up -d
 # → API at http://localhost:8001
 ```
 
-Always point `base_url` at your local backend (e.g. `http://localhost:8001`). Full walkthrough: [`docs/SETUP.md`](https://github.com/NavaiaSolutions/navaia-forge-sdk/blob/main/docs/SETUP.md).
+Always point `base_url` at your local backend (e.g. `http://localhost:8001`). Full walkthrough: [`SETUP.md`](https://github.com/NavaiaSolutions/navaia-forge-sdk/blob/main/SETUP.md).
 
 ## Installation
 

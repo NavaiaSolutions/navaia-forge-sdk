@@ -74,7 +74,7 @@ docker compose -f docker-compose.dist.yml up -d
 
 Your backend is now at **`http://localhost:8001`** (optional dashboard at `http://localhost:3030`). Point the SDK at that URL — **not** at any `api.navaia.com` host, which doesn't serve traffic.
 
-Full walkthrough (license, upgrades, air-gapped installs, troubleshooting): **[`docs/SETUP.md`](./docs/SETUP.md)**.
+Full walkthrough (license, upgrades, air-gapped installs, troubleshooting): **[`SETUP.md`](./SETUP.md)**.
 
 ---
 
@@ -249,7 +249,7 @@ import { NavaiaForge } from "@navaia/forge";
 
 const nf = new NavaiaForge({
   apiKey: "nf_your_api_key",
-  baseUrl: "http://localhost:8001", // your self-hosted backend (see docs/SETUP.md)
+  baseUrl: "http://localhost:8001", // your self-hosted backend (see SETUP.md)
 });
 
 const workforce = await nf.workforces.create({ name: "Research Team" });
@@ -280,7 +280,7 @@ pip install navaia-forge
 from navaia_forge import NavaiaForgeClient
 
 client = NavaiaForgeClient(
-    base_url="http://localhost:8001",  # your self-hosted backend (see docs/SETUP.md)
+    base_url="http://localhost:8001",  # your self-hosted backend (see SETUP.md)
     api_key="nf_your_api_key",
 )
 
@@ -334,7 +334,7 @@ Runnable end-to-end examples in [`examples/`](./examples/):
 
 ## Documentation
 
-- [Setup Guide](./docs/SETUP.md) — backend, SDK install, framework interop (LangGraph, LangChain, CrewAI, …)
+- [Setup Guide](./SETUP.md) — backend, SDK install, framework interop (LangGraph, LangChain, CrewAI, …)
 - [API Reference](https://docs.navaia.com/api)
 - [Platform Guide](https://docs.navaia.com/guide)
 - [Contributing](./CONTRIBUTING.md)
