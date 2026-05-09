@@ -1,9 +1,13 @@
 /**
- * Integration resource — manage third-party integrations.
+ * Integrations resource — installable plugins (Slack, GitHub, Linear, ...) plus CRUD.
  */
 
-import { del, get, getList, put } from "../http.js";
-import type { Integration, ResolvedConfig } from "../types.js";
+import { del, get, getList, post, put } from "../http.js";
+import type {
+  AvailablePlugin,
+  Integration,
+  ResolvedConfig,
+} from "../types.js";
 
 export class IntegrationResource {
   private readonly config: ResolvedConfig;
@@ -12,40 +16,93 @@ export class IntegrationResource {
     this.config = config;
   }
 
-  /**
-   * List integrations, optionally filtered by workforce.
-   *
-   * @param workforceId - If provided, only integrations for this workforce are returned.
-   */
-  list(workforceId?: string): Promise<Integration[]> {
-    const params = workforceId
-      ? { workforce_id: workforceId }
-      : undefined;
+  // ── Plugin registry ──────────────────────────────────────
+
+  /** List all integration plugins registered on the server. */
+  listPlugins(): Promise<AvailablePlugin[]> {
+    return get<AvailablePlugin[]>(this.config, "/plugins");
+  }
+
+  // ── Integrations CRUD ────────────────────────────────────
+
+  /** List integrations, optionally scoped to a workforce. */
+  list(
+    options: { workforceId?: string; offset?: number; limit?: number } = {},
+  ): Promise<Integration[]> {
+    const params: Record<string, string> = {
+      offset: String(options.offset ?? 0),
+      limit: String(options.limit ?? 50),
+    };
+    if (options.workforceId !== undefined) {
+      params["workforce_id"] = options.workforceId;
+    }
     return getList<Integration>(this.config, "/integrations", params);
   }
 
-  /** Get a single integration by ID. */
-  get(integrationId: string): Promise<Integration> {
-    return get<Integration>(this.config, `/integrations/${integrationId}`);
+  /**
+   * Fetch a single integration by ID.
+   *
+   * The backend does not expose a single-integration GET endpoint; this
+   * helper round-trips through {@link list} and filters client-side.
+   */
+  async get(integrationId: string): Promise<Integration> {
+    const all = await this.list();
+    const match = all.find((item) => item.id === integrationId);
+    if (!match) {
+      throw new Error(`Integration ${integrationId} not found`);
+    }
+    return match;
+  }
+
+  /** Install and activate a plugin against a workforce. */
+  create(input: {
+    workforce_id: string;
+    plugin_name: string;
+    display_name?: string;
+    config_json?: Record<string, unknown>;
+  }): Promise<Integration> {
+    return post<Integration>(this.config, "/integrations", {
+      workforce_id: input.workforce_id,
+      plugin_name: input.plugin_name,
+      display_name: input.display_name ?? "",
+      config_json: input.config_json ?? {},
+    });
+  }
+
+  /** Update an integration's display name, config, or status. */
+  update(
+    integrationId: string,
+    input: {
+      display_name?: string;
+      config_json?: Record<string, unknown>;
+      status?: string;
+    },
+  ): Promise<Integration> {
+    return put<Integration>(
+      this.config,
+      `/integrations/${integrationId}`,
+      input,
+    );
   }
 
   /**
-   * Update the configuration for an integration.
-   *
-   * @param integrationId - The integration to configure.
-   * @param configJson - Configuration key-value pairs.
+   * Configure an integration — updates `config_json` only.
+   * Convenience around {@link update}.
    */
   configure(
     integrationId: string,
     configJson: Record<string, unknown>,
   ): Promise<Integration> {
-    return put<Integration>(this.config, `/integrations/${integrationId}`, {
-      config_json: configJson,
-    });
+    return this.update(integrationId, { config_json: configJson });
   }
 
-  /** Disconnect (delete) an integration. */
-  disconnect(integrationId: string): Promise<void> {
+  /** Uninstall an integration (deactivates the plugin). */
+  delete(integrationId: string): Promise<void> {
     return del<void>(this.config, `/integrations/${integrationId}`);
+  }
+
+  /** Backwards-compatible alias for {@link delete}. */
+  disconnect(integrationId: string): Promise<void> {
+    return this.delete(integrationId);
   }
 }
