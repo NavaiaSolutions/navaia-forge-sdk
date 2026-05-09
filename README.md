@@ -52,7 +52,7 @@ tester = client.agents.create(
 )
 
 # Wire reviewer → tester so approved diffs flow downstream automatically.
-client.workforces.create_edge(
+client.workforces.edges.create(
     workforce_id=wf.id,
     source_agent_id=reviewer.id,
     target_agent_id=tester.id,

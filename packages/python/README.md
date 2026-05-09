@@ -39,9 +39,9 @@ tester   = client.agents.create(workforce_id=wf.id, name="Tester", role="qa",
                                 model_provider="anthropic", model_name="sonnet")
 
 # Wire reviewer → tester
-client.workforces.create_edge(workforce_id=wf.id,
-                              source_agent_id=reviewer.id,
-                              target_agent_id=tester.id)
+client.workforces.edges.create(workforce_id=wf.id,
+                               source_agent_id=reviewer.id,
+                               target_agent_id=tester.id)
 
 # Hand work to the team
 task  = client.tasks.create(workforce_id=wf.id, title="Review PR #482 and add tests")

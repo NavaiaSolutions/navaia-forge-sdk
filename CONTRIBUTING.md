@@ -23,8 +23,8 @@ Be respectful and constructive. We are building tools for the community and expe
 1. Fork and clone the repository:
 
 ```bash
-git clone https://github.com/navaia/forge-sdk.git
-cd forge-sdk
+git clone https://github.com/NavaiaSolutions/navaia-forge-sdk.git
+cd navaia-forge-sdk
 ```
 
 2. Set up the TypeScript SDK:
