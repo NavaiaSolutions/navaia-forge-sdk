@@ -55,7 +55,9 @@ class TasksResource(ResourceBase):
             body["agent_id"] = agent_id
         if metadata is not None:
             body["metadata_json"] = metadata
-        return parse_model(Task, self._http.post("/tasks", body))
+        return parse_model(
+            Task, self._http.post(f"/workforces/{workforce_id}/tasks", body)
+        )
 
     def approve(self, task_id: str) -> Task:
         """Approve a task that is waiting on human approval."""

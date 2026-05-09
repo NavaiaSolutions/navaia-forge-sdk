@@ -177,7 +177,7 @@ agent = client.agents.create(
     name="Echo",
     role="generalist",
     instructions="Repeat the user's request, then answer it.",
-    model_provider="anthropic", model_name="sonnet",
+    model_provider="anthropic", model_name="claude-sonnet-4-6",
 )
 
 task = client.tasks.create(workforce_id=wf.id, title="Say hello.")
@@ -232,6 +232,7 @@ pip install "navaia-forge[langgraph]" langgraph langchain-openai
 ```
 
 ```python
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 
@@ -240,14 +241,16 @@ from navaia_forge.integrations.langgraph import (
     LangGraphWorkforce, get_forge_context,
 )
 
-def search_node(state, config):
+# IMPORTANT: annotate `config` as RunnableConfig — LangGraph only injects
+# the config dict into nodes that explicitly opt in via this type hint.
+def search_node(state: dict, config: RunnableConfig) -> dict:
     forge = get_forge_context(config)          # SDK auto-injected
     if forge.workforce_id:
         hits = forge.client.knowledge.search(forge.workforce_id, state["query"])
         return {"hits": [h.model_dump() for h in hits.results]}
     return {"hits": []}
 
-def answer_node(state, config):
+def answer_node(state: dict, config: RunnableConfig) -> dict:
     llm = ChatOpenAI(model="gpt-4o-mini")
     context = "\n".join(h.get("content", "") for h in state.get("hits", []))
     return {"answer": str(llm.invoke(f"{state['query']}\n\n{context}").content)}
@@ -257,7 +260,8 @@ g.add_node("search", search_node); g.add_node("answer", answer_node)
 g.set_entry_point("search"); g.add_edge("search", "answer"); g.add_edge("answer", END)
 
 client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_…")
-wf = LangGraphWorkforce(graph=g.compile(), client=client, name="research-team")
+wf = LangGraphWorkforce(graph=g.compile(), client=client, name="research-team",
+                        workforce_id="<your-forge-workforce-id>")
 print(wf.run({"query": "What are NavaiaForge's design goals?"}))
 ```
 
@@ -286,23 +290,28 @@ from crewai import Agent, Task, Crew
 client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_…")
 
 # 1. Forge owns the workforce, edges, knowledge, observability.
-wf      = client.workforces.create(name="Research Crew")
-kb      = client.knowledge.create(name="Industry Reports")
-client.knowledge.upload_document(kb_id=kb.id, file_path="./reports.pdf")
-client.workforces.attach_knowledge(workforce_id=wf.id, knowledge_base_id=kb.id)
+wf = client.workforces.create(name="Research Crew")
+kb = client.knowledge.create(name="Industry Reports")
+client.knowledge.upload_document(knowledge_base_id=kb.id, file_path="./reports.pdf")
+client.knowledge.attach_to_workforce(workforce_id=wf.id, knowledge_base_id=kb.id)
 
 # 2. Your framework drives reasoning *inside* one agent. It pulls
 #    context out of Forge (RAG hits, tool defs) and pushes results back
-#    (task updates, conversation messages, usage logs).
+#    (task records, conversation messages, usage logs).
 hits = client.knowledge.search(wf.id, "Q3 market shifts")
 crew = Crew(agents=[Agent(role="analyst", goal="Summarize", ...)],
             tasks=[Task(description=f"Summarize:\n{hits}")])
 output = crew.kickoff()
 
-# 3. Push the result back into Forge so it lives in the workforce's
-#    task history alongside everything else.
-task = client.tasks.create(workforce_id=wf.id, title="Q3 summary")
-client.tasks.complete(task.id, result=output)
+# 3. Record the run on the Forge side so it lives in the workforce's
+#    task history alongside everything else. Pass the framework's output
+#    via metadata; observability rolls up cost from the SDK calls above.
+client.tasks.create(
+    workforce_id=wf.id,
+    title="Q3 summary",
+    description=str(output),
+    metadata={"framework": "crewai"},
+)
 ```
 
 The same shape works for **LangChain** chains, **AutoGen** group chats,

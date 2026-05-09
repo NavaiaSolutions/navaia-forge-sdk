@@ -28,7 +28,7 @@ def task_payload() -> dict:
 @pytest.mark.integration
 def test_create_task_returns_typed_model(httpx_mock, client, base_url, task_payload) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/tasks",
+        url=f"{base_url}/api/v1/workforces/wf_1/tasks",
         method="POST",
         json=task_payload,
     )
@@ -104,7 +104,7 @@ def test_create_task_with_agent_and_metadata(
     httpx_mock, client, base_url, task_payload
 ) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/tasks",
+        url=f"{base_url}/api/v1/workforces/wf_1/tasks",
         method="POST",
         json={**task_payload, "agent_id": "ag_1", "metadata_json": {"k": "v"}},
     )
