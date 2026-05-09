@@ -2,7 +2,7 @@
  * TypeScript type definitions for the NavaiaForge SDK.
  *
  * These mirror the Pydantic schemas from the FastAPI backend and the
- * frontend type definitions.
+ * Python SDK's type definitions.
  */
 
 // ── Enums / Unions ──────────────────────────────────────────
@@ -67,8 +67,8 @@ export interface Workforce {
   readonly runtime_mode: RuntimeMode;
   readonly config_json: Record<string, unknown>;
   readonly status: string;
-  readonly created_at: string;
-  readonly updated_at: string;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
 }
 
 export interface WorkforceCreate {
@@ -97,7 +97,26 @@ export interface Edge {
   readonly label: string;
   readonly max_runs: number | null;
   readonly task_mode: string;
-  readonly created_at: string;
+  readonly created_at: string | null;
+}
+
+export interface EdgeCreate {
+  readonly workforce_id: string;
+  readonly source_agent_id: string;
+  readonly target_agent_id: string;
+  readonly approval_mode?: ApprovalMode;
+  readonly condition_expr?: string;
+  readonly label?: string;
+  readonly max_runs?: number;
+  readonly task_mode?: string;
+}
+
+export interface EdgeUpdate {
+  readonly approval_mode?: ApprovalMode;
+  readonly condition_expr?: string | null;
+  readonly label?: string;
+  readonly max_runs?: number | null;
+  readonly task_mode?: string;
 }
 
 export interface WorkforceFull extends Workforce {
@@ -106,6 +125,17 @@ export interface WorkforceFull extends Workforce {
 }
 
 // ── Agents ──────────────────────────────────────────────────
+
+export interface AgentVariable {
+  readonly name: string;
+  readonly type: "text" | "number" | "boolean" | "json";
+  readonly value: string;
+}
+
+export interface AgentMemory {
+  readonly short_term: boolean;
+  readonly long_term: boolean;
+}
 
 export interface AgentConfig {
   readonly welcome_message?: string;
@@ -116,17 +146,8 @@ export interface AgentConfig {
   readonly parent_prompt?: string;
   readonly data_masking?: boolean;
   readonly autonomy_limit?: number;
-  readonly memory?: {
-    readonly short_term: boolean;
-    readonly long_term: boolean;
-  };
+  readonly memory?: AgentMemory;
   readonly variables?: AgentVariable[];
-}
-
-export interface AgentVariable {
-  readonly name: string;
-  readonly type: "text" | "number" | "boolean" | "json";
-  readonly value: string;
 }
 
 export interface Agent {
@@ -141,11 +162,11 @@ export interface Agent {
   readonly max_turns: number;
   readonly tools: Record<string, unknown>[];
   readonly knowledge_bases: string[];
-  readonly config_json: AgentConfig;
+  readonly config_json: Record<string, unknown>;
   readonly position_x: number;
   readonly position_y: number;
-  readonly created_at: string;
-  readonly updated_at: string;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
 }
 
 export interface AgentCreate {
@@ -159,7 +180,7 @@ export interface AgentCreate {
   readonly max_turns?: number;
   readonly tools?: Record<string, unknown>[];
   readonly knowledge_bases?: string[];
-  readonly config_json?: Partial<AgentConfig>;
+  readonly config_json?: Record<string, unknown>;
   readonly position_x?: number;
   readonly position_y?: number;
 }
@@ -174,9 +195,17 @@ export interface AgentUpdate {
   readonly max_turns?: number;
   readonly tools?: Record<string, unknown>[];
   readonly knowledge_bases?: string[];
-  readonly config_json?: Partial<AgentConfig>;
+  readonly config_json?: Record<string, unknown>;
   readonly position_x?: number;
   readonly position_y?: number;
+}
+
+/** An agent attached to a workforce with per-workforce overrides. */
+export interface WorkforceMember {
+  readonly agent: Agent;
+  readonly override_json: Record<string, unknown>;
+  readonly position_x: number;
+  readonly position_y: number;
 }
 
 // ── Tasks ───────────────────────────────────────────────────
@@ -194,8 +223,8 @@ export interface Task {
   readonly error: string | null;
   readonly retry_count: number;
   readonly metadata_json: Record<string, unknown>;
-  readonly created_at: string;
-  readonly updated_at: string;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
   readonly started_at: string | null;
   readonly completed_at: string | null;
 }
@@ -214,7 +243,7 @@ export interface TaskLog {
   readonly task_id: string;
   readonly event: string;
   readonly detail: string;
-  readonly created_at: string;
+  readonly created_at: string | null;
 }
 
 export interface WaitForCompletionOptions {
@@ -230,8 +259,16 @@ export interface Conversation {
   readonly id: string;
   readonly workforce_id: string;
   readonly title: string;
-  readonly created_at: string;
-  readonly updated_at: string;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface ToolCall {
+  readonly id: string;
+  readonly tool_name: string;
+  readonly input: Record<string, unknown>;
+  readonly output: string | null;
+  readonly status: "pending" | "success" | "error";
 }
 
 export interface Message {
@@ -243,15 +280,7 @@ export interface Message {
   readonly agent_name: string | null;
   readonly tool_calls: ToolCall[];
   readonly metadata_json: Record<string, unknown>;
-  readonly created_at: string;
-}
-
-export interface ToolCall {
-  readonly id: string;
-  readonly tool_name: string;
-  readonly input: Record<string, unknown>;
-  readonly output: string | null;
-  readonly status: "pending" | "success" | "error";
+  readonly created_at: string | null;
 }
 
 export interface MessageCreate {
@@ -270,15 +299,25 @@ export interface KnowledgeBase {
   readonly source_type: KnowledgeSourceType;
   readonly config_json: Record<string, unknown>;
   readonly document_count: number;
-  readonly created_at: string;
-  readonly updated_at: string;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
 }
 
 export interface KnowledgeBaseCreate {
-  readonly workforce_id: string;
   readonly name: string;
   readonly description?: string;
+  readonly workforce_id?: string;
   readonly source_type?: KnowledgeSourceType;
+  readonly retrieval_mode?: string;
+  readonly config_json?: Record<string, unknown>;
+}
+
+export interface KnowledgeBaseUpdate {
+  readonly name?: string;
+  readonly description?: string;
+  readonly source_type?: KnowledgeSourceType;
+  readonly retrieval_mode?: string;
+  readonly config_json?: Record<string, unknown>;
 }
 
 export interface KnowledgeDocument {
@@ -289,7 +328,68 @@ export interface KnowledgeDocument {
   readonly size_bytes: number;
   readonly chunk_count: number;
   readonly status: DocumentStatus;
-  readonly created_at: string;
+  readonly created_at: string | null;
+}
+
+export interface SearchResult {
+  readonly content: string;
+  readonly score: number;
+  readonly document_id: string;
+  readonly filename: string;
+  readonly chunk_index: number;
+  readonly metadata: Record<string, unknown>;
+}
+
+export interface SearchResponse {
+  readonly results: SearchResult[];
+  readonly query: string;
+  readonly total: number;
+}
+
+export interface WorkforceKnowledgeBaseLink {
+  readonly knowledge_base: KnowledgeBase;
+  readonly added_at: string | null;
+}
+
+// ── Tools ───────────────────────────────────────────────────
+
+export interface Tool {
+  readonly id: string;
+  readonly owner_id: string | null;
+  readonly name: string;
+  readonly description: string;
+  readonly kind: string;
+  readonly icon: string | null;
+  readonly integration_id: string | null;
+  readonly config_json: Record<string, unknown>;
+  readonly is_featured: boolean;
+  readonly is_template: boolean;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface ToolCreate {
+  readonly name: string;
+  readonly description?: string;
+  readonly kind: string;
+  readonly icon?: string;
+  readonly integration_id?: string;
+  readonly config_json?: Record<string, unknown>;
+}
+
+export interface ToolUpdate {
+  readonly name?: string;
+  readonly description?: string;
+  readonly kind?: string;
+  readonly icon?: string;
+  readonly integration_id?: string;
+  readonly config_json?: Record<string, unknown>;
+}
+
+export interface WorkforceToolLink {
+  readonly tool: Tool;
+  readonly override_json: Record<string, unknown>;
+  readonly added_at: string | null;
 }
 
 // ── Integrations ────────────────────────────────────────────
@@ -297,27 +397,104 @@ export interface KnowledgeDocument {
 export interface Integration {
   readonly id: string;
   readonly workforce_id: string;
-  readonly name: string;
-  readonly type: string;
-  readonly category: string;
-  readonly status: IntegrationStatus;
+  readonly plugin_name: string;
+  readonly display_name: string;
   readonly config_json: Record<string, unknown>;
-  readonly icon_url: string | null;
-  readonly created_at: string;
-  readonly updated_at: string;
+  readonly status: string;
+  readonly last_error: string | null;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface AvailablePlugin {
+  readonly name: string;
+  readonly display_name: string;
+  readonly description: string;
+  readonly version: string;
+  readonly active: boolean;
+  readonly config_schema: Record<string, unknown>;
+}
+
+// ── Setup ──────────────────────────────────────────────────
+
+export interface SetupOptions {
+  readonly navaia_cloud_enabled: boolean;
+  readonly claude_cli_enabled: boolean;
+}
+
+export interface SetupValidateResult {
+  readonly status: "healthy" | "unhealthy";
+  readonly message: string;
 }
 
 // ── Observability ───────────────────────────────────────────
 
 export interface TokenUsage {
   readonly id: string;
-  readonly agent_id: string;
+  readonly agent_id: string | null;
   readonly task_id: string | null;
   readonly model: string;
   readonly input_tokens: number;
   readonly output_tokens: number;
-  readonly cost_weighted: number;
-  readonly created_at: string;
+  readonly total_tokens: number;
+  readonly weighted_tokens: number;
+  readonly cost_usd: number;
+  readonly duration_ms: number;
+  readonly date_key: string;
+  readonly created_at: string | null;
+}
+
+export interface AgentMetrics {
+  readonly id: string;
+  readonly agent_id: string;
+  readonly period: string;
+  readonly period_start: string | null;
+  readonly tasks_completed: number;
+  readonly tasks_failed: number;
+  readonly avg_duration_ms: number;
+  readonly total_tokens: number;
+  readonly total_cost_usd: number;
+  readonly quality_score: number;
+  readonly created_at: string | null;
+}
+
+export interface RLEvaluation {
+  readonly id: string;
+  readonly agent_id: string;
+  readonly batch: number;
+  readonly score_delta: number;
+  readonly cumulative_score: number;
+  readonly quality_rating: number;
+  readonly token_efficiency: number;
+  readonly summary: string;
+  readonly created_at: string | null;
+}
+
+export interface AgentCostBreakdown {
+  readonly agent_id: string;
+  readonly agent_name: string;
+  readonly total_tokens: number;
+  readonly weighted_tokens: number;
+  readonly cost_usd: number;
+  readonly call_count: number;
+}
+
+export interface ModelCostBreakdown {
+  readonly model: string;
+  readonly total_tokens: number;
+  readonly weighted_tokens: number;
+  readonly cost_usd: number;
+  readonly call_count: number;
+}
+
+export interface CostSummary {
+  readonly workforce_id: string;
+  readonly period_days: number;
+  readonly total_tokens: number;
+  readonly total_weighted_tokens: number;
+  readonly total_cost_usd: number;
+  readonly by_agent: AgentCostBreakdown[];
+  readonly by_model: ModelCostBreakdown[];
 }
 
 export interface MetricsSummary {
@@ -327,29 +504,26 @@ export interface MetricsSummary {
   readonly active_agents: number;
   readonly total_tokens_today: number;
   readonly cost_today: number;
-  readonly tasks_by_status: Record<TaskStatus, number>;
-  readonly tokens_by_agent: ReadonlyArray<{
-    agent_id: string;
-    agent_name: string;
-    tokens: number;
-  }>;
-  readonly tokens_by_model: ReadonlyArray<{
-    model: string;
-    tokens: number;
-  }>;
-  readonly tasks_over_time: ReadonlyArray<{
-    date: string;
-    count: number;
-  }>;
-  readonly cost_over_time: ReadonlyArray<{
-    date: string;
-    cost: number;
-  }>;
+  readonly tasks_by_status: Record<string, number>;
+  readonly tokens_by_agent: ReadonlyArray<Record<string, unknown>>;
+  readonly tokens_by_model: ReadonlyArray<Record<string, unknown>>;
+  readonly tasks_over_time: ReadonlyArray<Record<string, unknown>>;
+  readonly cost_over_time: ReadonlyArray<Record<string, unknown>>;
+}
+
+export interface LogTokenUsageInput {
+  readonly model: string;
+  readonly agent_id?: string;
+  readonly task_id?: string;
+  readonly input_tokens?: number;
+  readonly output_tokens?: number;
+  readonly cost_usd?: number;
+  readonly duration_ms?: number;
 }
 
 // ── Templates ───────────────────────────────────────────────
 
-export interface Template {
+export interface WorkforceTemplate {
   readonly id: string;
   readonly name: string;
   readonly description: string;
@@ -359,8 +533,99 @@ export interface Template {
   readonly edges_config: Record<string, unknown>[];
   readonly config_json: Record<string, unknown>;
   readonly is_builtin: boolean;
-  readonly created_at: string;
+  readonly price_cents: number;
+  readonly is_premium: boolean;
+  readonly preview_json: Record<string, unknown>;
+  readonly created_at: string | null;
   readonly agent_count?: number;
+}
+
+/** Backwards-compatible alias retained for existing imports. */
+export type Template = WorkforceTemplate;
+
+export interface WorkforceTemplateCreate {
+  readonly name: string;
+  readonly description?: string;
+  readonly runtime_mode?: string;
+  readonly agents_config?: Record<string, unknown>[];
+  readonly edges_config?: Record<string, unknown>[];
+  readonly config_json?: Record<string, unknown>;
+  readonly category?: string;
+  readonly price_cents?: number;
+  readonly is_premium?: boolean;
+  readonly preview_json?: Record<string, unknown>;
+}
+
+export interface AgentTemplate {
+  readonly id: string;
+  readonly name: string;
+  readonly role: string;
+  readonly description: string;
+  readonly instructions: string;
+  readonly model_provider: ModelProvider;
+  readonly model_name: string;
+  readonly escalation_model: string | null;
+  readonly max_turns: number;
+  readonly tools: Record<string, unknown>[];
+  readonly config_json: Record<string, unknown>;
+  readonly is_builtin: boolean;
+  readonly category: string;
+  readonly created_at: string | null;
+}
+
+export interface AgentTemplateCreate {
+  readonly name: string;
+  readonly role: string;
+  readonly description?: string;
+  readonly instructions?: string;
+  readonly model_provider?: ModelProvider;
+  readonly model_name?: string;
+  readonly escalation_model?: string;
+  readonly max_turns?: number;
+  readonly tools?: Record<string, unknown>[];
+  readonly config_json?: Record<string, unknown>;
+  readonly category?: string;
+}
+
+export interface TemplateInstantiateResult {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly agents_created: number;
+  readonly edges_created: number;
+}
+
+// ── Auth ───────────────────────────────────────────────────
+
+export interface User {
+  readonly id: string;
+  readonly email: string;
+  readonly name: string;
+  readonly avatar_url: string | null;
+  readonly provider: string;
+  readonly is_admin: boolean;
+  readonly onboarding_completed: boolean;
+  readonly created_at: string | null;
+}
+
+export interface TokenPair {
+  readonly access_token: string;
+  readonly refresh_token: string;
+  readonly token_type: string;
+  readonly user: User;
+}
+
+export interface ApiKeyCreated {
+  readonly api_key: string;
+  readonly key_hash: string;
+  readonly name: string;
+  readonly message: string;
+}
+
+export interface ApiKeyValidation {
+  readonly valid: boolean;
+  readonly user_id: string;
+  readonly role: string;
 }
 
 // ── WebSocket Events ────────────────────────────────────────

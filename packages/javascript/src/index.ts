@@ -40,12 +40,16 @@ export type {
   WorkforceUpdate,
   WorkforceFull,
   Edge,
+  EdgeCreate,
+  EdgeUpdate,
   // Agents
   Agent,
   AgentCreate,
   AgentUpdate,
   AgentConfig,
+  AgentMemory,
   AgentVariable,
+  WorkforceMember,
   // Tasks
   Task,
   TaskCreate,
@@ -59,20 +63,51 @@ export type {
   // Knowledge
   KnowledgeBase,
   KnowledgeBaseCreate,
+  KnowledgeBaseUpdate,
   KnowledgeDocument,
+  SearchResult,
+  SearchResponse,
+  WorkforceKnowledgeBaseLink,
+  // Tools
+  Tool,
+  ToolCreate,
+  ToolUpdate,
+  WorkforceToolLink,
   // Integrations
   Integration,
+  AvailablePlugin,
+  // Setup
+  SetupOptions,
+  SetupValidateResult,
   // Observability
   TokenUsage,
+  AgentMetrics,
+  RLEvaluation,
+  AgentCostBreakdown,
+  ModelCostBreakdown,
+  CostSummary,
   MetricsSummary,
+  LogTokenUsageInput,
   // Templates
   Template,
+  WorkforceTemplate,
+  WorkforceTemplateCreate,
+  AgentTemplate,
+  AgentTemplateCreate,
+  TemplateInstantiateResult,
+  // Auth
+  User,
+  TokenPair,
+  ApiKeyCreated,
+  ApiKeyValidation,
   // WebSocket events
   WsEvent,
   WsTaskEvent,
   WsAgentStatusEvent,
   WsChatEvent,
   WsSystemEvent,
+  // Pagination
+  PaginatedResponse,
   // Enums
   ApprovalMode,
   TaskStatus,
@@ -86,11 +121,26 @@ export type {
 } from "./types.js";
 
 // ── Resource classes (for advanced usage / extension) ──────
-export { WorkforceResource } from "./resources/workforces.js";
+export { WorkforceResource, EdgesResource } from "./resources/workforces.js";
 export { AgentResource } from "./resources/agents.js";
 export { TaskResource } from "./resources/tasks.js";
 export { ConversationResource } from "./resources/conversations.js";
 export { KnowledgeResource } from "./resources/knowledge.js";
 export { ObservabilityResource } from "./resources/observability.js";
-export { TemplateResource } from "./resources/templates.js";
+export { TemplateResource, AgentTemplateResource } from "./resources/templates.js";
 export { IntegrationResource } from "./resources/integrations.js";
+export { ToolsResource } from "./resources/tools.js";
+export { SetupResource } from "./resources/setup.js";
+export { AuthResource } from "./resources/auth.js";
+
+// ── HTTP escape hatch ──────────────────────────────────────
+export {
+  request as httpRequest,
+  get as httpGet,
+  getList as httpGetList,
+  post as httpPost,
+  put as httpPut,
+  patch as httpPatch,
+  del as httpDelete,
+  uploadFile as httpUploadFile,
+} from "./http.js";

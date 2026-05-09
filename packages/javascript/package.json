@@ -1,6 +1,6 @@
 {
   "name": "@navaia/forge",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Official TypeScript/JavaScript SDK for the NavaiaForge platform",
   "license": "MIT",
   "type": "module",
@@ -17,6 +17,16 @@
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./integrations/langgraph": {
+      "import": {
+        "types": "./dist/integrations/langgraph/index.d.ts",
+        "default": "./dist/integrations/langgraph/index.js"
+      },
+      "require": {
+        "types": "./dist/integrations/langgraph/index.d.cts",
+        "default": "./dist/integrations/langgraph/index.cjs"
+      }
     }
   },
   "files": [
@@ -31,6 +41,14 @@
     "test:watch": "vitest",
     "lint": "eslint src/",
     "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@langchain/core": ">=0.3.0 <1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "tsup": "^8.0.0",
@@ -47,6 +65,7 @@
     "ai",
     "agents",
     "workforce",
-    "sdk"
+    "sdk",
+    "langgraph"
   ]
 }

@@ -2,7 +2,7 @@
  * Conversation resource — manage conversations and messages.
  */
 
-import { get, getList, post } from "../http.js";
+import { getList, post } from "../http.js";
 import type {
   Conversation,
   Message,
@@ -20,43 +20,33 @@ export class ConversationResource {
   list(workforceId: string): Promise<Conversation[]> {
     return getList<Conversation>(
       this.config,
-      "/conversations",
-      { workforce_id: workforceId },
+      `/workforces/${workforceId}/conversations`,
     );
   }
 
-  /** Get a single conversation by ID. */
-  get(conversationId: string): Promise<Conversation> {
-    return get<Conversation>(this.config, `/conversations/${conversationId}`);
-  }
-
-  /**
-   * Create a new conversation.
-   *
-   * @param workforceId - The workforce to create the conversation in.
-   * @param title - Optional title for the conversation.
-   */
+  /** Create a new conversation in a workforce. */
   create(workforceId: string, title = ""): Promise<Conversation> {
-    return post<Conversation>(this.config, "/conversations", {
-      workforce_id: workforceId,
-      title,
-    });
+    return post<Conversation>(
+      this.config,
+      `/workforces/${workforceId}/conversations`,
+      { title },
+    );
   }
 
-  /** Get all messages in a conversation. */
+  /** List messages for a conversation. */
   messages(conversationId: string): Promise<Message[]> {
-    return get<{ messages: Message[] }>(
+    return getList<Message>(
       this.config,
-      `/conversations/${conversationId}`,
-    ).then((r) => r.messages ?? []);
+      `/conversations/${conversationId}/messages`,
+    );
   }
 
   /**
-   * Send a message in a conversation.
+   * Send a user message to a conversation.
    *
-   * @param conversationId - The conversation to send the message in.
+   * @param conversationId - The conversation to post the message in.
    * @param content - The message content.
-   * @param agentId - Optional agent to direct the message to.
+   * @param agentId - Optional agent to direct the message at.
    */
   sendMessage(
     conversationId: string,
@@ -66,15 +56,14 @@ export class ConversationResource {
     const body: Record<string, unknown> = {
       conversation_id: conversationId,
       content,
-      role: "user",
     };
-    if (agentId) {
+    if (agentId !== undefined) {
       body["agent_id"] = agentId;
     }
-    return post<{ user_message: Message }>(
+    return post<Message>(
       this.config,
-      `/chat/${conversationId}`,
+      `/conversations/${conversationId}/messages`,
       body,
-    ).then((r) => r.user_message);
+    );
   }
 }
