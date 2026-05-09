@@ -44,9 +44,13 @@ class TasksResource(ResourceBase):
         priority: str = "standard",
         metadata: dict[str, Any] | None = None,
     ) -> Task:
-        """Create a task."""
+        """Create a task on a workforce.
+
+        The task is submitted to ``POST /workforces/{workforce_id}/tasks``.
+        ``agent_id``, when provided, scopes the task to a specific agent within
+        the workforce; the backend still routes via the workforce's edges.
+        """
         body: dict[str, Any] = {
-            "workforce_id": workforce_id,
             "title": title,
             "description": description,
             "priority": priority,
@@ -55,7 +59,10 @@ class TasksResource(ResourceBase):
             body["agent_id"] = agent_id
         if metadata is not None:
             body["metadata_json"] = metadata
-        return parse_model(Task, self._http.post("/tasks", body))
+        return parse_model(
+            Task,
+            self._http.post(f"/workforces/{workforce_id}/tasks", body),
+        )
 
     def approve(self, task_id: str) -> Task:
         """Approve a task that is waiting on human approval."""
