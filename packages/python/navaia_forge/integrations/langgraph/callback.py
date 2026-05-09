@@ -31,6 +31,23 @@ from uuid import UUID
 
 from ._lazy import import_base_callback_handler
 
+
+def _is_uuid(value: str | None) -> bool:
+    """Return True if ``value`` is a non-empty string that parses as a UUID.
+
+    The Forge backend's ``/token-usage`` endpoint validates ``task_id`` and
+    ``agent_id`` as UUIDs and rejects free-form strings with HTTP 422. We
+    drop those fields before calling rather than letting the row fail to
+    persist — partial telemetry beats no telemetry.
+    """
+    if not isinstance(value, str) or not value:
+        return False
+    try:
+        UUID(value)
+    except (ValueError, AttributeError, TypeError):
+        return False
+    return True
+
 if TYPE_CHECKING:  # pragma: no cover
     from ...client import NavaiaForgeClient
 
@@ -61,12 +78,30 @@ def _make_callback_class() -> type:
         ) -> None:
             super().__init__()
             self._client = client
-            self._task_id = task_id
-            self._agent_id = agent_id
+            # Forge's /token-usage endpoint validates these as UUIDs.
+            # Coerce to None for non-UUID values so the row still persists
+            # (just unattached) instead of failing the whole call.
+            self._task_id = task_id if _is_uuid(task_id) else None
+            self._agent_id = agent_id if _is_uuid(agent_id) else None
             self._workforce_id = workforce_id
             self._default_model = default_model
+            self._warned_non_uuid = False
+            if task_id and self._task_id is None:
+                self._warn_non_uuid("task_id", task_id)
+            if agent_id and self._agent_id is None:
+                self._warn_non_uuid("agent_id", agent_id)
             # run_id → start time, so on_*_end can compute duration_ms.
             self._starts: dict[UUID, float] = {}
+
+        def _warn_non_uuid(self, field: str, value: str) -> None:
+            """One-line log when a caller passed a non-UUID identifier."""
+            logger.warning(
+                "NavaiaForgeCallback: %s=%r is not a UUID — token usage will "
+                "still be logged but will not be attached to a Forge %s.",
+                field,
+                value,
+                field.removesuffix("_id"),
+            )
 
         # ── LLM ────────────────────────────────────────────────
 

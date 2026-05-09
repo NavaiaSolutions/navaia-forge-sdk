@@ -83,8 +83,13 @@ def fake_client() -> Any:
 
 
 def test_callback_logs_token_usage_on_llm_end(fake_client: Any) -> None:
+    task_uuid = "550e8400-e29b-41d4-a716-446655440000"
+    agent_uuid = "550e8400-e29b-41d4-a716-446655440001"
     cb = NavaiaForgeCallback(
-        fake_client, task_id="task_1", agent_id="agent_1", default_model="fallback"
+        fake_client,
+        task_id=task_uuid,
+        agent_id=agent_uuid,
+        default_model="fallback",
     )
     run_id = uuid4()
     cb.on_llm_start({}, ["hello"], run_id=run_id)
@@ -99,8 +104,8 @@ def test_callback_logs_token_usage_on_llm_end(fake_client: Any) -> None:
     fake_client.observability.log_token_usage.assert_called_once()
     kwargs = fake_client.observability.log_token_usage.call_args.kwargs
     assert kwargs["model"] == "claude-opus-4-6"
-    assert kwargs["task_id"] == "task_1"
-    assert kwargs["agent_id"] == "agent_1"
+    assert kwargs["task_id"] == task_uuid
+    assert kwargs["agent_id"] == agent_uuid
     assert kwargs["input_tokens"] == 10
     assert kwargs["output_tokens"] == 20
     assert kwargs["duration_ms"] >= 0
@@ -134,6 +139,27 @@ def test_callback_chain_lifecycle_does_not_call_observability(
     cb.on_chain_start({"name": "Plan"}, {"x": 1}, run_id=run_id)
     cb.on_chain_end({"y": 2}, run_id=run_id)
     fake_client.observability.log_token_usage.assert_not_called()
+
+
+def test_callback_drops_non_uuid_task_id_to_avoid_422(fake_client: Any) -> None:
+    """Backend rejects non-UUID task_id with 422 — we drop it instead."""
+    cb = NavaiaForgeCallback(fake_client, task_id="t-not-a-uuid")
+    run_id = uuid4()
+    cb.on_llm_start({}, ["x"], run_id=run_id)
+    cb.on_llm_end(SimpleNamespace(llm_output=None, generations=[]), run_id=run_id)
+    kwargs = fake_client.observability.log_token_usage.call_args.kwargs
+    assert kwargs["task_id"] is None, "non-UUID task_id should be coerced to None"
+
+
+def test_callback_passes_through_valid_uuid_task_id(fake_client: Any) -> None:
+    real_uuid = "550e8400-e29b-41d4-a716-446655440000"
+    cb = NavaiaForgeCallback(fake_client, task_id=real_uuid, agent_id=real_uuid)
+    run_id = uuid4()
+    cb.on_llm_start({}, ["x"], run_id=run_id)
+    cb.on_llm_end(SimpleNamespace(llm_output=None, generations=[]), run_id=run_id)
+    kwargs = fake_client.observability.log_token_usage.call_args.kwargs
+    assert kwargs["task_id"] == real_uuid
+    assert kwargs["agent_id"] == real_uuid
 
 
 def test_callback_handles_errors_cleanly(fake_client: Any) -> None:
