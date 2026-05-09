@@ -1,92 +1,119 @@
 """
-NavaiaForge SDK — Monitor Tasks and Token Usage
+NavaiaForge SDK — Monitor Tasks and Cost
 
 Demonstrates listing tasks, checking statuses, and querying
 observability metrics for a workforce.
+
+Run:
+    export NAVAIA_FORGE_BASE_URL="http://localhost:8000"
+    export NAVAIA_FORGE_API_KEY="nf_..."
+    export NAVAIA_FORGE_WORKFORCE_ID="wf_..."
+    python examples/python/monitor_tasks.py
 """
+
+from __future__ import annotations
+
+import os
+import sys
 
 from navaia_forge import NavaiaForgeClient
 
-client = NavaiaForgeClient(
-    base_url="https://api.navaia.com",
-    api_key="nf_your_api_key",
-)
+_STATUS_ICONS: dict[str, str] = {
+    "done": "[OK]",
+    "in_progress": "[..]",
+    "pending": "[--]",
+    "failed": "[!!]",
+    "rejected": "[XX]",
+    "blocked": "[##]",
+    "waiting": "[~~]",
+}
 
-WORKFORCE_ID = "wf_your_workforce_id"
 
-# ── 1. List all tasks ──────────────────────────────────────
+def main() -> None:
+    workforce_id = os.environ.get("NAVAIA_FORGE_WORKFORCE_ID")
+    if not workforce_id:
+        sys.stderr.write("Set NAVAIA_FORGE_WORKFORCE_ID before running.\n")
+        sys.exit(1)
 
-all_tasks = client.tasks.list(WORKFORCE_ID)
-print(f"Total tasks: {len(all_tasks)}\n")
+    client = NavaiaForgeClient(
+        base_url=os.environ.get("NAVAIA_FORGE_BASE_URL", "http://localhost:8000"),
+        api_key=os.environ.get("NAVAIA_FORGE_API_KEY", ""),
+    )
 
-for task in all_tasks:
-    status_icon = {
-        "done": "[OK]",
-        "in_progress": "[..]",
-        "pending": "[--]",
-        "failed": "[!!]",
-        "rejected": "[XX]",
-    }.get(task["status"], "[??]")
+    # ── 1. List all tasks ──────────────────────────────────────
 
-    print(f"  {status_icon} {task['title']}")
-    print(f"       ID: {task['id']}")
-    print(f"       Status: {task['status']}")
-    print(f"       Created: {task['created_at']}")
-    if task.get("completed_at"):
-        print(f"       Completed: {task['completed_at']}")
-    print()
+    all_tasks = client.tasks.list(workforce_id)
+    print(f"Total tasks: {len(all_tasks)}\n")
 
-# ── 2. Filter by status ───────────────────────────────────
+    for task in all_tasks:
+        icon = _STATUS_ICONS.get(task.status, "[??]")
+        print(f"  {icon} {task.title}")
+        print(f"       ID: {task.id}")
+        print(f"       Status: {task.status}")
+        print(f"       Created: {task.created_at}")
+        if task.completed_at:
+            print(f"       Completed: {task.completed_at}")
+        print()
 
-in_progress = client.tasks.list(WORKFORCE_ID, status="in_progress")
-failed = client.tasks.list(WORKFORCE_ID, status="failed")
-print(f"In progress: {len(in_progress)}")
-print(f"Failed: {len(failed)}")
+    # ── 2. Filter by status ───────────────────────────────────
 
-# ── 3. Inspect a specific task ─────────────────────────────
+    in_progress = client.tasks.list(workforce_id, status="in_progress")
+    failed = client.tasks.list(workforce_id, status="failed")
+    print(f"In progress: {len(in_progress)}")
+    print(f"Failed: {len(failed)}")
 
-if all_tasks:
-    latest = all_tasks[0]
-    detail = client.tasks.get(latest["id"])
-    print(f"\nLatest task detail:")
-    print(f"  Title:       {detail['title']}")
-    print(f"  Description: {detail['description']}")
-    print(f"  Status:      {detail['status']}")
-    print(f"  Agent:       {detail.get('agent_id', 'unassigned')}")
-    print(f"  Priority:    {detail['priority']}")
-    if detail.get("result"):
-        print(f"  Result:      {detail['result'][:200]}...")
-    if detail.get("error"):
-        print(f"  Error:       {detail['error']}")
+    # ── 3. Inspect a specific task ─────────────────────────────
 
-# ── 4. Observability — metrics summary ─────────────────────
+    if all_tasks:
+        latest = all_tasks[0]
+        detail = client.tasks.get(latest.id)
+        print("\nLatest task detail:")
+        print(f"  Title:       {detail.title}")
+        print(f"  Description: {detail.description}")
+        print(f"  Status:      {detail.status}")
+        print(f"  Agent:       {detail.agent_id or 'unassigned'}")
+        print(f"  Priority:    {detail.priority}")
+        if detail.result:
+            print(f"  Result:      {detail.result[:200]}...")
+        if detail.error:
+            print(f"  Error:       {detail.error}")
 
-metrics = client.observability.summary(WORKFORCE_ID)
-print(f"\nMetrics Summary:")
-print(f"  Total tasks:       {metrics['total_tasks']}")
-print(f"  Completed:         {metrics['completed_tasks']}")
-print(f"  Failed:            {metrics['failed_tasks']}")
-print(f"  Active agents:     {metrics['active_agents']}")
-print(f"  Tokens today:      {metrics['total_tokens_today']:,}")
-print(f"  Cost today:        ${metrics['cost_today']:.4f}")
+    # ── 4. Observability — metrics summary (raw dict payload) ──
 
-# ── 5. Token usage breakdown ──────────────────────────────
+    metrics = client.observability.summary(workforce_id)
+    print("\nMetrics Summary:")
+    print(f"  Total tasks:       {metrics.get('total_tasks', 0)}")
+    print(f"  Completed:         {metrics.get('completed_tasks', 0)}")
+    print(f"  Failed:            {metrics.get('failed_tasks', 0)}")
+    print(f"  Active agents:     {metrics.get('active_agents', 0)}")
+    print(f"  Tokens today:      {metrics.get('total_tokens_today', 0):,}")
+    print(f"  Cost today:        ${metrics.get('cost_today', 0):.4f}")
 
-token_history = client.observability.token_usage(WORKFORCE_ID, days=7)
-print(f"\nToken usage (last 7 days): {len(token_history)} records")
+    # ── 5. Cost breakdown over the last 7 days ────────────────
 
-total_input = sum(r["input_tokens"] for r in token_history)
-total_output = sum(r["output_tokens"] for r in token_history)
-total_cost = sum(r["cost_weighted"] for r in token_history)
+    cost = client.observability.cost(workforce_id, days=7)
+    print(f"\nCost (last {cost.period_days} days):")
+    print(f"  Total tokens:    {cost.total_tokens:,}")
+    print(f"  Weighted tokens: {cost.total_weighted_tokens:,}")
+    print(f"  Total cost:      ${cost.total_cost_usd:.4f}")
 
-print(f"  Input tokens:  {total_input:,}")
-print(f"  Output tokens: {total_output:,}")
-print(f"  Total cost:    ${total_cost:.4f}")
+    if cost.by_model:
+        print("\n  By model:")
+        for row in cost.by_model:
+            print(
+                f"    {row.model:<20} "
+                f"tokens={row.total_tokens:>10,}  "
+                f"cost=${row.cost_usd:.4f}"
+            )
 
-# ── 6. Retry failed tasks ─────────────────────────────────
+    # ── 6. Retry failed tasks ─────────────────────────────────
 
-if failed:
-    print(f"\nRetrying {len(failed)} failed task(s)...")
-    for task in failed:
-        retried = client.tasks.retry(task["id"])
-        print(f"  Retried: {retried['title']} -> {retried['status']}")
+    if failed:
+        print(f"\nRetrying {len(failed)} failed task(s)...")
+        for task in failed:
+            retried = client.tasks.retry(task.id)
+            print(f"  Retried: {retried.title} -> {retried.status}")
+
+
+if __name__ == "__main__":
+    main()

@@ -8,8 +8,8 @@
 import { NavaiaForge } from "@navaia/forge";
 
 const nf = new NavaiaForge({
-  apiKey: "nf_your_api_key",
-  baseUrl: "https://api.navaia.com",
+  apiKey: process.env.NAVAIA_FORGE_API_KEY ?? "nf_your_api_key",
+  baseUrl: process.env.NAVAIA_FORGE_BASE_URL ?? "http://localhost:8000",
 });
 
 // ── 1. Create the workforce ────────────────────────────────
@@ -109,5 +109,5 @@ const task = await nf.tasks.create({
 
 console.log(`Pipeline started — task ${task.id}`);
 console.log(
-  `Track progress at: https://app.navaia.com/workforces/${workforce.id}`,
+  `Workforce id: ${workforce.id} (open it in your NavaiaForge dashboard)`,
 );
