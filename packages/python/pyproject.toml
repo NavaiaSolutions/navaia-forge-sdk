@@ -1,9 +1,9 @@
 [project]
 name = "navaia-forge"
-version = "0.2.0"
+version = "0.1.0"
 description = "Python SDK for the NavaiaForge AI workforce platform"
 readme = "README.md"
-license = { text = "Apache-2.0" }
+license = { text = "MIT" }
 requires-python = ">=3.10"
 authors = [
     { name = "Navaia", email = "dev@navaia.com" },
@@ -12,7 +12,7 @@ keywords = ["ai", "agents", "workforce", "orchestration", "sdk"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -37,10 +37,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/navaia/navaia-forge"
-Repository = "https://github.com/navaia/navaia-forge"
-Documentation = "https://github.com/navaia/navaia-forge#readme"
-Issues = "https://github.com/navaia/navaia-forge/issues"
+Homepage = "https://github.com/NavaiaSolutions/navaia-forge-sdk"
+Repository = "https://github.com/NavaiaSolutions/navaia-forge-sdk"
+Documentation = "https://github.com/NavaiaSolutions/navaia-forge-sdk#readme"
+Issues = "https://github.com/NavaiaSolutions/navaia-forge-sdk/issues"
 
 [build-system]
 requires = ["hatchling"]

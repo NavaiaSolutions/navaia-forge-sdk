@@ -4,7 +4,7 @@
 
 [![npm version](https://img.shields.io/npm/v/@navaia/forge)](https://www.npmjs.com/package/@navaia/forge)
 [![PyPI version](https://img.shields.io/pypi/v/navaia-forge)](https://pypi.org/project/navaia-forge/)
-[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 NavaiaForge is a platform for building **multi-agent AI workforces** — groups of specialized agents that share context, hand off work to each other, draw on shared knowledge, call shared tools, and stream results back to you in real time. This repo contains the official **TypeScript** and **Python** SDKs.
 
@@ -92,7 +92,7 @@ print(final.status, final.result)
 ```python
 from navaia_forge import NavaiaForgeWs, HttpConfig
 
-ws = NavaiaForgeWs(HttpConfig(base_url="https://api.navaia.com", api_key="nf_..."))
+ws = NavaiaForgeWs(HttpConfig(base_url="http://localhost:8000", api_key="nf_..."))
 ws.on("task:status",   lambda e: print("task:",   e["task_id"], e["status"]))
 ws.on("agent:status",  lambda e: print("agent:",  e["agent_id"], e["status"]))
 ws.on("chat:message",  lambda e: print(e["role"], e["content"]))
@@ -186,7 +186,7 @@ import { NavaiaForge } from "@navaia/forge";
 
 const nf = new NavaiaForge({
   apiKey: "nf_your_api_key",
-  baseUrl: "https://api.navaia.com",
+  baseUrl: "http://localhost:8000", // point at your NavaiaForge instance
 });
 
 const workforce = await nf.workforces.create({ name: "Research Team" });
@@ -217,7 +217,7 @@ pip install navaia-forge
 from navaia_forge import NavaiaForgeClient
 
 client = NavaiaForgeClient(
-    base_url="https://api.navaia.com",
+    base_url="http://localhost:8000",  # point at your NavaiaForge instance
     api_key="nf_your_api_key",
 )
 
@@ -271,8 +271,8 @@ Runnable end-to-end examples in [`examples/`](./examples/):
 
 ## Documentation
 
-- [API Reference](https://docs.navaia.com/api)
-- [Platform Guide](https://docs.navaia.com/guide)
+- API Reference — _coming soon_
+- Platform Guide — _coming soon_
 - [Contributing](./CONTRIBUTING.md)
 
 ---
@@ -285,4 +285,4 @@ We welcome contributions. Please read our [Contributing Guide](./CONTRIBUTING.md
 
 ## License
 
-This project is licensed under the [AGPL-3.0 License](./LICENSE).
+This project is licensed under the [MIT License](./LICENSE).

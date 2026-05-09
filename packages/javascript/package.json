@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "description": "Official TypeScript/JavaScript SDK for the NavaiaForge platform",
   "license": "MIT",
+  "homepage": "https://github.com/NavaiaSolutions/navaia-forge-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NavaiaSolutions/navaia-forge-sdk.git",
+    "directory": "packages/javascript"
+  },
+  "bugs": {
+    "url": "https://github.com/NavaiaSolutions/navaia-forge-sdk/issues"
+  },
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -21,7 +30,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsup",

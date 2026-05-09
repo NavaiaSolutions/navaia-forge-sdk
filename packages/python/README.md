@@ -27,7 +27,7 @@ pip install navaia-forge
 ```python
 from navaia_forge import NavaiaForgeClient
 
-client = NavaiaForgeClient(base_url="https://api.navaia.com", api_key="nf_...")
+client = NavaiaForgeClient(base_url="http://localhost:8000", api_key="nf_...")
 
 # Build the team
 wf = client.workforces.create(name="Code Review Team")
@@ -56,7 +56,7 @@ All resource methods return typed [Pydantic v2](https://docs.pydantic.dev/) mode
 ```python
 from navaia_forge import NavaiaForgeWs, HttpConfig
 
-ws = NavaiaForgeWs(HttpConfig(base_url="https://api.navaia.com", api_key="nf_..."))
+ws = NavaiaForgeWs(HttpConfig(base_url="http://localhost:8000", api_key="nf_..."))
 ws.on("task:status",  lambda e: print("task:",  e["task_id"], e["status"]))
 ws.on("agent:status", lambda e: print("agent:", e["agent_id"], e["status"]))
 ws.on("chat:message", lambda e: print(e["role"], e["content"]))
@@ -99,4 +99,4 @@ ruff check navaia_forge tests
 
 ## License
 
-Apache-2.0
+[MIT](./LICENSE) © NavaiaSolutions
