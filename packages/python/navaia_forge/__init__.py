@@ -84,7 +84,7 @@ from .types import (
 )
 from .websocket import NavaiaForgeWs
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "Agent",
