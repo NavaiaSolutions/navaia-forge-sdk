@@ -82,6 +82,36 @@ Channels: `task:status`, `agent:status`, `chat:message`, `system:*`.
 | `client.observability` | `summary`, `cost`, `agent_metrics`, `agent_evaluations`, `log_token_usage` | See what the team is doing and what it costs |
 | `client.auth` | `me`, `register`, `login`, `refresh`, `create_key`, `validate`, OAuth URL helpers | Build your own UI on top of NavaiaForge |
 
+## LangGraph integration
+
+Already have a LangGraph workforce? Run it inside Forge with one wrapper — keep your graph code, gain Forge observability and backend access.
+
+```bash
+pip install "navaia-forge[langgraph]"
+```
+
+```python
+from navaia_forge import NavaiaForgeClient
+from navaia_forge.integrations.langgraph import LangGraphWorkforce, get_forge_context
+
+# Inside any node — no special wiring beyond the standard `config` arg.
+def search_node(state, config):
+    forge = get_forge_context(config)
+    hits = forge.client.knowledge.search(forge.workforce_id, state["query"])
+    return {"hits": [h.model_dump() for h in hits.results]}
+
+# Wrap a compiled graph; the wrapper installs the Forge callback and
+# injects `ForgeContext` on `RunnableConfig.configurable` for you.
+wf = LangGraphWorkforce(
+    graph=my_compiled_graph,
+    client=NavaiaForgeClient(base_url="...", api_key="..."),
+    workforce_id="wf_existing",
+)
+result = wf.run({"query": "..."}, task_id="task_123")
+```
+
+Token usage from every LLM call lands on the workforce's cost dashboard. See `examples/python/langgraph_workforce.py` for a full end-to-end run.
+
 ## Standalone or with the UI
 
 - **Standalone:** the SDK is sufficient on its own — no dashboard required. Drive everything from Python: scripts, services, Airflow / Prefect tasks, Jupyter, custom CLIs, internal tools.
