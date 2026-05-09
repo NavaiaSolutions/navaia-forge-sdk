@@ -1,0 +1,46 @@
+name: JavaScript SDK CI
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "packages/javascript/**"
+      - ".github/workflows/javascript-sdk.yml"
+  pull_request:
+    paths:
+      - "packages/javascript/**"
+      - ".github/workflows/javascript-sdk.yml"
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/javascript
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["20", "22"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+          cache-dependency-path: packages/javascript/package-lock.json
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build (ESM + CJS + DTS, both entry points)
+        run: npm run build
