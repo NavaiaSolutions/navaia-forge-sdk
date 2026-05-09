@@ -259,7 +259,9 @@ class Message(_Base):
 
 class KnowledgeBase(_Base):
     id: str
-    workforce_id: str
+    # Library KBs (not yet attached to a workforce) come back with
+    # workforce_id=null; only workforce-scoped KBs carry a value.
+    workforce_id: str | None = None
     name: str
     description: str = ""
     source_type: KnowledgeSourceType = "upload"
