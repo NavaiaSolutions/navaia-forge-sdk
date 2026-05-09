@@ -16,6 +16,26 @@ A single LLM call solves a single prompt; real work rarely is. NavaiaForge model
 
 The SDK exposes every primitive directly.
 
+## ⚠️ Run the backend first
+
+**This SDK is a client.** It needs a NavaiaForge backend to talk to. There's **no hosted service yet** — today the only way to get a backend is to **run it yourself with Docker**. That sounds like a chore; it's actually the point:
+
+- **Your data stays on your infrastructure** — prompts, agent outputs, KBs, conversations.
+- **No per-token markup, no rate limits** — you pay your LLM provider directly.
+- **Air-gapped friendly** — works offline, on-prem, in regulated environments.
+- **No vendor lock-in** — the image and database are yours.
+
+Your options: run it on your **laptop** (dev / learning), on your **own VM or cluster** (production), or **air-gapped on-prem** (compliance). Same image, same SDK code, just a different `base_url`.
+
+```bash
+curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
+# create .env with your NAVAIA_LICENSE token, then:
+docker compose -f docker-compose.dist.yml up -d
+# → API at http://localhost:8001
+```
+
+Always point `base_url` at your local backend (e.g. `http://localhost:8001`). Full walkthrough: [`docs/SETUP.md`](https://github.com/NavaiaSolutions/navaia-forge-sdk/blob/main/docs/SETUP.md).
+
 ## Installation
 
 ```bash
@@ -27,7 +47,8 @@ pip install navaia-forge
 ```python
 from navaia_forge import NavaiaForgeClient
 
-client = NavaiaForgeClient(base_url="https://api.navaia.com", api_key="nf_...")
+# Point at the backend you started with `docker compose up`.
+client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_...")
 
 # Build the team
 wf = client.workforces.create(name="Code Review Team")
@@ -56,7 +77,7 @@ All resource methods return typed [Pydantic v2](https://docs.pydantic.dev/) mode
 ```python
 from navaia_forge import NavaiaForgeWs, HttpConfig
 
-ws = NavaiaForgeWs(HttpConfig(base_url="https://api.navaia.com", api_key="nf_..."))
+ws = NavaiaForgeWs(HttpConfig(base_url="http://localhost:8001", api_key="nf_..."))
 ws.on("task:status",  lambda e: print("task:",  e["task_id"], e["status"]))
 ws.on("agent:status", lambda e: print("agent:", e["agent_id"], e["status"]))
 ws.on("chat:message", lambda e: print(e["role"], e["content"]))
@@ -91,11 +112,14 @@ pip install "navaia-forge[langgraph]"
 ```
 
 ```python
+from langchain_core.runnables import RunnableConfig
+
 from navaia_forge import NavaiaForgeClient
 from navaia_forge.integrations.langgraph import LangGraphWorkforce, get_forge_context
 
-# Inside any node — no special wiring beyond the standard `config` arg.
-def search_node(state, config):
+# Annotate `config` as RunnableConfig — modern LangGraph only injects
+# the config dict into nodes that explicitly opt in via this type hint.
+def search_node(state: dict, config: RunnableConfig) -> dict:
     forge = get_forge_context(config)
     hits = forge.client.knowledge.search(forge.workforce_id, state["query"])
     return {"hits": [h.model_dump() for h in hits.results]}
@@ -104,7 +128,7 @@ def search_node(state, config):
 # injects `ForgeContext` on `RunnableConfig.configurable` for you.
 wf = LangGraphWorkforce(
     graph=my_compiled_graph,
-    client=NavaiaForgeClient(base_url="...", api_key="..."),
+    client=NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_..."),
     workforce_id="wf_existing",
 )
 result = wf.run({"query": "..."}, task_id="task_123")

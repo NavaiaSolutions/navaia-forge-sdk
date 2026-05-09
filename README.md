@@ -15,6 +15,69 @@ The SDK is a complete client over the same backend that powers the NavaiaForge d
 
 ---
 
+## ⚠️ You run the backend yourself (and that's a feature)
+
+### What's actually going on?
+
+NavaiaForge has two pieces:
+
+1. **The SDK** (this repo) — a small library you `pip install` or `npm install` into your own code. It's just a typed HTTP client.
+2. **The backend** — the actual brain. It stores your workforces, runs agents, holds knowledge bases, talks to LLMs, streams events. It's a server.
+
+The SDK can't do anything on its own — it needs a backend to talk to. **Right now there is no hosted NavaiaForge service.** We don't run a server on the internet that you can point your API key at. The only way to get a backend is to **run it yourself**, which takes one Docker command.
+
+> Once it's running, the SDK talks to it the same way it would talk to any hosted service. Your code doesn't change.
+
+### Your options
+
+| Option | What it looks like | Best for |
+|---|---|---|
+| **Run it on your laptop** | `docker compose up` on your dev machine. Backend at `http://localhost:8001`. | Trying it out, building locally, demos, learning. |
+| **Run it on your own server** | Same compose file on a VM (EC2, GCP, your own box) or a Kubernetes cluster. | Production, team use, anything that needs to outlive your laptop. |
+| **Air-gapped / on-prem** | Same image, no internet required after install. | Regulated industries (healthcare, finance, defense), strict compliance. |
+| **Hosted by Navaia** | Not available yet. When it ships, you'll change one URL — `base_url` — and nothing else. | Future. |
+
+There's no "free tier vs paid tier" you have to pick from a pricing page. You install it, you own it.
+
+### Why this is actually good for you
+
+- **Your data never leaves your infrastructure.** Prompts, agent outputs, knowledge bases, conversations, source code, customer data — all of it sits on a machine you control. Nothing transits a Navaia-owned server.
+- **No per-token markup, no rate limits.** You pay your LLM provider directly (Anthropic, OpenAI, your own model). NavaiaForge doesn't sit in the middle taking a cut or throttling you.
+- **No vendor lock-in on the runtime.** If we vanish tomorrow, your workforces keep running. The image is yours; the database is yours; the data is yours.
+- **It's just Postgres + a container.** Backups, migrations, monitoring, secrets management — use whatever your team already uses. No proprietary console you have to learn.
+- **Compliance works the way your security team already wants it to.** SOC2, HIPAA, GDPR data residency, on-prem requirements — none of it is a "talk to sales" conversation, because the data is on your side of the wire by default.
+- **It works offline.** Once it's pulled, you can run it on a plane, in a SCIF, in a regional outage. The SDK + your local backend are self-contained.
+- **One command to upgrade, one command to roll back.** `docker compose pull && up -d`. If a release breaks something, pin the previous tag and you're back.
+
+### One Docker command
+
+```bash
+# 1. Pull the published compose file
+curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
+
+# 2. Configure (license token from licensing@navaia.com)
+cat > .env <<'EOF'
+NAVAIA_LICENSE=eyJ...your-token...
+NAVAIA_LICENSE_ENFORCEMENT=strict
+NAVAIA_BACKEND_VERSION=v1.0.0
+NAVAIA_FRONTEND_VERSION=v1.0.0
+POSTGRES_USER=navaia_forge
+POSTGRES_PASSWORD=change-me-please
+POSTGRES_DB=navaia_forge
+API_PORT=8001
+UI_PORT=3030
+EOF
+
+# 3. Bring it up
+docker compose -f docker-compose.dist.yml up -d
+```
+
+Your backend is now at **`http://localhost:8001`** (optional dashboard at `http://localhost:3030`). Point the SDK at that URL — **not** at any `api.navaia.com` host, which doesn't serve traffic.
+
+Full walkthrough (license, upgrades, air-gapped installs, troubleshooting): **[`docs/SETUP.md`](./docs/SETUP.md)**.
+
+---
+
 ## Why a workforce, not just an agent?
 
 A single LLM call solves a single prompt. Real work is rarely a single prompt. NavaiaForge models work the way teams actually do it:
@@ -92,7 +155,7 @@ print(final.status, final.result)
 ```python
 from navaia_forge import NavaiaForgeWs, HttpConfig
 
-ws = NavaiaForgeWs(HttpConfig(base_url="https://api.navaia.com", api_key="nf_..."))
+ws = NavaiaForgeWs(HttpConfig(base_url="http://localhost:8001", api_key="nf_..."))
 ws.on("task:status",   lambda e: print("task:",   e["task_id"], e["status"]))
 ws.on("agent:status",  lambda e: print("agent:",  e["agent_id"], e["status"]))
 ws.on("chat:message",  lambda e: print(e["role"], e["content"]))
@@ -186,7 +249,7 @@ import { NavaiaForge } from "@navaia/forge";
 
 const nf = new NavaiaForge({
   apiKey: "nf_your_api_key",
-  baseUrl: "https://api.navaia.com",
+  baseUrl: "http://localhost:8001", // your self-hosted backend (see docs/SETUP.md)
 });
 
 const workforce = await nf.workforces.create({ name: "Research Team" });
@@ -217,7 +280,7 @@ pip install navaia-forge
 from navaia_forge import NavaiaForgeClient
 
 client = NavaiaForgeClient(
-    base_url="https://api.navaia.com",
+    base_url="http://localhost:8001",  # your self-hosted backend (see docs/SETUP.md)
     api_key="nf_your_api_key",
 )
 
