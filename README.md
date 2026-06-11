@@ -115,7 +115,7 @@ tester = client.agents.create(
 )
 
 # Wire reviewer → tester so approved diffs flow downstream automatically.
-client.workforces.create_edge(
+client.workforces.edges.create(
     workforce_id=wf.id,
     source_agent_id=reviewer.id,
     target_agent_id=tester.id,
@@ -127,7 +127,7 @@ client.workforces.create_edge(
 ```python
 kb = client.knowledge.create(name="Product Docs")
 client.knowledge.upload_document(kb_id=kb.id, file_path="./handbook.pdf")
-client.workforces.attach_knowledge(workforce_id=wf.id, knowledge_base_id=kb.id)
+client.knowledge.attach_to_workforce(workforce_id=wf.id, knowledge_base_id=kb.id)
 # Every agent in the workforce can now retrieve from "Product Docs" via RAG.
 ```
 

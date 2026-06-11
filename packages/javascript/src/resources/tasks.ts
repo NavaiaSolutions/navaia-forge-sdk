@@ -49,9 +49,17 @@ export class TaskResource {
     return get<Task>(this.config, `/tasks/${taskId}`);
   }
 
-  /** Create a new task. */
+  /** Create a new task.
+   *
+   * Posts to ``/workforces/{workforce_id}/tasks`` (matching the live backend
+   * route — ``POST /tasks`` returns 404 in production).
+   */
   create(data: TaskCreate): Promise<Task> {
-    return post<Task>(this.config, "/tasks", data);
+    return post<Task>(
+      this.config,
+      `/workforces/${data.workforce_id}/tasks`,
+      data,
+    );
   }
 
   /** Approve a task that is waiting for plan/question approval. */

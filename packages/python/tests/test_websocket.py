@@ -21,7 +21,8 @@ def ws() -> NavaiaForgeWs:
 
 @pytest.mark.unit
 def test_url_construction_http_to_ws(ws: NavaiaForgeWs) -> None:
-    assert ws._build_url() == "ws://test.local/ws?api_key=k"
+    # Auth lives in headers, not the URL — see _build_auth_headers.
+    assert ws._build_url() == "ws://test.local/ws"
 
 
 @pytest.mark.unit
@@ -29,7 +30,23 @@ def test_url_construction_https_to_wss() -> None:
     ws = NavaiaForgeWs(
         HttpConfig(base_url="https://forge.navaia.com", api_key="abc", timeout=5.0)
     )
-    assert ws._build_url() == "wss://forge.navaia.com/ws?api_key=abc"
+    assert ws._build_url() == "wss://forge.navaia.com/ws"
+
+
+@pytest.mark.unit
+def test_auth_headers_contain_api_key() -> None:
+    ws = NavaiaForgeWs(
+        HttpConfig(base_url="https://forge.navaia.com", api_key="abc", timeout=5.0)
+    )
+    assert ws._build_auth_headers() == [("X-API-Key", "abc")]
+
+
+@pytest.mark.unit
+def test_auth_headers_omits_when_no_api_key() -> None:
+    ws = NavaiaForgeWs(
+        HttpConfig(base_url="https://forge.navaia.com", api_key="", timeout=5.0)
+    )
+    assert ws._build_auth_headers() == []
 
 
 @pytest.mark.unit

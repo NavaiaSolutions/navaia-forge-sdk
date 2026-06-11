@@ -23,7 +23,6 @@ import threading
 import time
 from collections.abc import Callable
 from typing import Any
-from urllib.parse import urlencode
 
 try:  # pragma: no cover - optional import path
     from websockets.exceptions import ConnectionClosed
@@ -107,10 +106,18 @@ class NavaiaForgeWs:
             base = "wss://" + base[len("https://") :]
         elif base.startswith("http://"):
             base = "ws://" + base[len("http://") :]
-        url = f"{base}/ws"
+        return f"{base}/ws"
+
+    def _build_auth_headers(self) -> list[tuple[str, str]]:
+        """Auth headers for the WS upgrade.
+
+        Sent as headers (not URL query) so credentials never appear in
+        proxy access logs, browser history, or server-side request logs.
+        """
+        headers: list[tuple[str, str]] = []
         if self._config.api_key:
-            url += "?" + urlencode({"api_key": self._config.api_key})
-        return url
+            headers.append(("X-API-Key", self._config.api_key))
+        return headers
 
     def connect(self) -> None:
         """Open the WebSocket connection. No-op if already connected."""
@@ -119,7 +126,9 @@ class NavaiaForgeWs:
         self._should_reconnect = True
         url = self._build_url()
         assert ws_connect is not None  # for type checkers
-        self._socket = ws_connect(url)
+        self._socket = ws_connect(
+            url, additional_headers=self._build_auth_headers()
+        )
         self._reconnect_attempts = 0
         self._emit("open")
 

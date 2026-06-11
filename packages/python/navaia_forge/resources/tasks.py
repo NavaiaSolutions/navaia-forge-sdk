@@ -9,7 +9,12 @@ from ..errors import TimeoutError as NfTimeoutError
 from ..types import Task, TaskStatus
 from ._base import ResourceBase, parse_list, parse_model
 
-_TERMINAL_STATES: frozenset[str] = frozenset({"done", "failed", "rejected"})
+# States that won't progress without external (human / upstream) action.
+# Includes the waiting_* family because a paused-on-question task is
+# terminal-for-now from the caller's perspective.
+_TERMINAL_STATES: frozenset[str] = frozenset(
+    {"done", "failed", "cancelled", "waiting_question", "waiting_plan", "waiting_blocked"}
+)
 
 
 class TasksResource(ResourceBase):
