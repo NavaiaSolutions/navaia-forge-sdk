@@ -110,3 +110,40 @@ def test_delete_returns_none(httpx_mock, client, base_url) -> None:
         status_code=204,
     )
     assert client.workforces.delete("wf_1") is None
+
+
+@pytest.mark.integration
+def test_publish_sends_listing_payload(httpx_mock, client, base_url, workforce_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/workforces/wf_1/publish",
+        method="POST",
+        json={
+            **workforce_payload,
+            "is_public": True,
+            "moderation_status": "pending",
+            "published_at": "2026-06-11T00:00:00Z",
+        },
+    )
+    wf = client.workforces.publish(
+        "wf_1",
+        tagline="Ship faster",
+        category="engineering",
+        price_cents=0,
+    )
+    assert wf.is_public is True
+    assert wf.moderation_status == "pending"
+    body = httpx_mock.get_requests()[0].read().decode()
+    assert "Ship faster" in body
+    assert "engineering" in body
+    assert "SAR" in body  # default currency
+
+
+@pytest.mark.integration
+def test_unpublish(httpx_mock, client, base_url, workforce_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/workforces/wf_1/unpublish",
+        method="POST",
+        json={**workforce_payload, "is_public": False},
+    )
+    wf = client.workforces.unpublish("wf_1")
+    assert wf.is_public is False

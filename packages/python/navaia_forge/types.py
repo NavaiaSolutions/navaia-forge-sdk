@@ -19,16 +19,28 @@ from pydantic import BaseModel, ConfigDict, Field
 ApprovalMode = Literal["auto_run", "approval_required", "agent_decides"]
 TaskStatus = Literal[
     "pending",
+    "queued",
     "in_progress",
+    "waiting_question",
+    "waiting_plan",
+    "waiting_blocked",
     "done",
     "failed",
-    "blocked",
-    "waiting",
-    "rejected",
+    "cancelled",
 ]
-RuntimeMode = Literal["claude_max", "openhands"]
+RuntimeMode = Literal["claude_max", "openhands", "genexa_code", "claw_code", "navaia_forge"]
 AgentStatus = Literal["working", "idle", "error", "offline"]
-ModelProvider = Literal["anthropic", "openai", "google", "open_source"]
+ModelProvider = Literal[
+    "anthropic",
+    "openai",
+    "google",
+    "open_source",
+    "openrouter",
+    "claude_max",
+    "claw_code",
+    "navaia_forge",
+    "genexa_code",
+]
 KnowledgeSourceType = Literal["upload", "website", "integration", "blank"]
 DocumentStatus = Literal["processing", "ready", "failed"]
 IntegrationStatus = Literal["connected", "disconnected", "error"]
@@ -65,6 +77,10 @@ class Workforce(_Base):
     runtime_mode: RuntimeMode = "claude_max"
     config_json: dict[str, Any] = Field(default_factory=dict)
     status: str = ""
+    # Marketplace fields — populated after publish().
+    is_public: bool = False
+    moderation_status: str | None = None
+    published_at: str | None = None
     created_at: str | None = None
     updated_at: str | None = None
 

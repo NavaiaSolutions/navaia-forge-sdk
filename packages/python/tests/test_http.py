@@ -28,6 +28,19 @@ def test_build_headers_omits_api_key_when_blank(base_url: str) -> None:
 
 
 @pytest.mark.integration
+def test_convenience_verbs_forward_extra_headers(httpx_mock, base_url: str) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/auth/keys",
+        method="POST",
+        json={"id": "k1", "api_key": "nf_x"},
+    )
+    http = HttpClient(HttpConfig(base_url=base_url, api_key="", timeout=5.0))
+    http.post("/auth/keys", {"name": "ci"}, headers={"Authorization": "Bearer jwt"})
+    sent = httpx_mock.get_requests()[0]
+    assert sent.headers["Authorization"] == "Bearer jwt"
+
+
+@pytest.mark.integration
 def test_request_maps_404_to_not_found(httpx_mock, base_url: str) -> None:
     httpx_mock.add_response(
         url=f"{base_url}/api/v1/workforces/missing",
