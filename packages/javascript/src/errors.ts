@@ -40,11 +40,58 @@ export class NotFoundError extends NavaiaForgeError {
   }
 }
 
+/** Thrown when the server rejects a request body (422). */
+export class ValidationError extends NavaiaForgeError {
+  constructor(message = "Validation failed") {
+    super(422, message);
+    this.name = "ValidationError";
+  }
+}
+
 /** Thrown when the rate limit is exceeded (429). */
 export class RateLimitError extends NavaiaForgeError {
   constructor(message = "Rate limit exceeded") {
     super(429, message);
     this.name = "RateLimitError";
+  }
+}
+
+/** Thrown on 5xx server errors. */
+export class ServerError extends NavaiaForgeError {
+  constructor(statusCode: number, message = "Server error") {
+    super(statusCode, message);
+    this.name = "ServerError";
+  }
+}
+
+/**
+ * Thrown when a sync push conflicts with remote changes (409).
+ *
+ * Carries both bundles so the caller can decide which to keep:
+ *
+ * ```ts
+ * try {
+ *   await local.sync.push("wf_123", cloud);
+ * } catch (e) {
+ *   if (e instanceof SyncConflictError) {
+ *     await local.sync.push("wf_123", cloud, { force: true }); // local wins
+ *     // or: do nothing to keep the remote version
+ *   }
+ * }
+ * ```
+ */
+export class SyncConflictError<TBundle = unknown> extends NavaiaForgeError {
+  public readonly localBundle?: TBundle;
+  public readonly remoteBundle?: TBundle;
+
+  constructor(
+    message = "Remote was modified since last sync",
+    options: { localBundle?: TBundle; remoteBundle?: TBundle } = {},
+  ) {
+    super(409, message);
+    this.name = "SyncConflictError";
+    this.localBundle = options.localBundle;
+    this.remoteBundle = options.remoteBundle;
   }
 }
 
@@ -72,9 +119,14 @@ export function errorFromStatus(
       return new PermissionError(message);
     case 404:
       return new NotFoundError(message);
+    case 422:
+      return new ValidationError(message);
     case 429:
       return new RateLimitError(message);
     default:
+      if (statusCode >= 500 && statusCode < 600) {
+        return new ServerError(statusCode, message);
+      }
       return new NavaiaForgeError(statusCode, message);
   }
 }
