@@ -114,8 +114,15 @@ e.g.        "550e8400-e29b-41d4-a716-446655440000:a1b2c3d4-..."
 1. **Export**: for each entity, look it up in the exporter's
    `sync_origin_map`. If found (entity was previously imported), emit the
    **stored** `origin_id`. If not found (entity was created on this
-   instance), mint `"{my_instance_id}:{entity.id}"`. Do NOT store minted
-   origin IDs at export time — the map only records *imported* identity.
+   instance), mint `"{my_instance_id}:{entity.id}"`. Child entities are
+   NOT stored in the map at export time — the map records *imported*
+   identity. **Exception (sync point)**: the export upserts the map row
+   for the *workforce itself* (origin_id, `bundle_hash`, `last_synced`).
+   Without this, a later pull-back onto a locally modified workforce has
+   no `last_synced` baseline and the §4.5 conflict guarantee cannot fire.
+   The 409 handler's remote-bundle export skips this upsert
+   (`record_sync_point=False`) — advancing `last_synced` while reporting
+   a conflict would mask that conflict on the client's retry.
 2. **Import**: look up each `origin_id` in the importer's
    `sync_origin_map` (scoped to the authenticated user). Found → update
    that local entity. Not found → create new entity with a **new local
