@@ -125,10 +125,12 @@ def test_reject_task(httpx_mock, client, base_url, task_payload) -> None:
     httpx_mock.add_response(
         url=f"{base_url}/api/v1/tasks/tk_1/reject",
         method="POST",
-        json={**task_payload, "status": "rejected"},
+        # The backend maps rejection to CANCELLED (see tasks/service.py reject_task).
+        json={**task_payload, "status": "cancelled", "error": "not needed"},
     )
     task = client.tasks.reject("tk_1", reason="not needed")
-    assert task.status == "rejected"
+    assert task.status == "cancelled"
+    assert task.error == "not needed"
 
 
 @pytest.mark.integration

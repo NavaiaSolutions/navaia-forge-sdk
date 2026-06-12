@@ -99,9 +99,13 @@ const ws = new NavaiaForgeWs({
   baseUrl: "http://localhost:8001",
   timeout: 60_000,
 });
-ws.on("task_updated",  (e) => console.log("task:",  e.task_id, e.status));
-ws.on("agent_status_changed", (e) => console.log("agent:", e.agent_id, e.status));
-ws.on("chat_message", (e) => console.log(e.role, e.content_preview));
+// SDK channels (re-mapped from raw backend event types):
+//   "task:status"   ← task_created/completed/failed/updated
+//   "agent:status"  ← agent_status_changed
+//   "chat:message"  ← chat_message
+ws.on("task:status",  (e) => console.log("task:",  e.task_id, e.status));
+ws.on("agent:status", (e) => console.log("agent:", e.agent_id, e.status));
+ws.on("chat:message", (e) => console.log(e.role, e.content_preview));
 ws.connect();
 ```
 

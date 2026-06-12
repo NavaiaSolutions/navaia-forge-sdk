@@ -125,9 +125,9 @@ def _make_callback_class() -> type:
                     model=model,
                     agent_id=self._agent_id,
                     task_id=self._task_id,
-                    input_tokens=usage["input"],
-                    output_tokens=usage["output"],
-                    cost_usd=usage["cost_usd"],
+                    input_tokens=int(usage["input"]),
+                    output_tokens=int(usage["output"]),
+                    cost_usd=float(usage["cost_usd"]),
                     duration_ms=duration_ms,
                 )
             except Exception as exc:

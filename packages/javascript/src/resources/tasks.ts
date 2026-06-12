@@ -16,7 +16,10 @@ import type {
 const TERMINAL_STATUSES: ReadonlySet<string> = new Set([
   "done",
   "failed",
-  "rejected",
+  "cancelled",
+  "waiting_question",
+  "waiting_plan",
+  "waiting_blocked",
 ]);
 
 export class TaskResource {
@@ -49,9 +52,17 @@ export class TaskResource {
     return get<Task>(this.config, `/tasks/${taskId}`);
   }
 
-  /** Create a new task. */
+  /** Create a new task.
+   *
+   * Posts to ``/workforces/{workforce_id}/tasks`` (matching the live backend
+   * route — ``POST /tasks`` returns 404 in production).
+   */
   create(data: TaskCreate): Promise<Task> {
-    return post<Task>(this.config, "/tasks", data);
+    return post<Task>(
+      this.config,
+      `/workforces/${data.workforce_id}/tasks`,
+      data,
+    );
   }
 
   /** Approve a task that is waiting for plan/question approval. */
@@ -80,7 +91,7 @@ export class TaskResource {
   }
 
   /**
-   * Poll until a task reaches a terminal state (done, failed, or rejected).
+   * Poll until a task reaches a terminal state.
    *
    * @param taskId - The task to wait for.
    * @param options - Polling interval and timeout configuration.

@@ -22,6 +22,7 @@ from ..http import HttpClient
 from ..types import (
     AgentTemplate,
     AgentTemplateCreate,
+    ModelProvider,
     TemplateInstantiateResult,
     WorkforceTemplate,
     WorkforceTemplateCreate,
@@ -64,7 +65,7 @@ class AgentTemplatesResource(ResourceBase):
         *,
         description: str = "",
         instructions: str = "",
-        model_provider: str = "anthropic",
+        model_provider: ModelProvider = "anthropic",
         model_name: str = "sonnet",
         escalation_model: str | None = None,
         max_turns: int = 25,

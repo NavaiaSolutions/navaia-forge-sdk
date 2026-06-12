@@ -23,6 +23,7 @@ from typing import Any
 
 import httpx
 
+from .errors import NavaiaForgeError, error_from_status
 from .http import HttpClient, HttpConfig
 from .resources import (
     AgentsResource,
@@ -104,9 +105,33 @@ class NavaiaForgeClient:
     # ── Misc ──────────────────────────────────────────────────
 
     def health(self) -> dict[str, Any]:
-        """Check API health (hits ``/health``, not ``/api/v1/health``)."""
+        """Check API health (hits ``/health``, not ``/api/v1/health``).
+
+        Routes through the shared ``httpx.Client`` (so timeout, transport, and
+        TLS config match every other call) and maps non-2xx responses to typed
+        :class:`NavaiaForgeError` subclasses, matching the rest of the SDK.
+        """
         url = f"{self._config.base_url.rstrip('/')}/health"
-        with httpx.Client(timeout=self._config.timeout) as client:
-            response = client.get(url)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = self._http._client.get(url)
+        except httpx.TimeoutException as exc:
+            raise NavaiaForgeError(0, f"Request timed out: {exc}") from exc
+        except httpx.RequestError as exc:
+            raise NavaiaForgeError(0, f"Network error: {exc}") from exc
+
+        if not response.is_success:
+            try:
+                payload = response.json()
+                detail = payload.get("detail") or payload.get("error") or response.text
+            except Exception:
+                detail = response.text or response.reason_phrase
+            raise error_from_status(response.status_code, str(detail))
+
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise NavaiaForgeError(
+                response.status_code,
+                f"Invalid JSON in /health response: {exc}",
+            ) from exc
+        return payload if isinstance(payload, dict) else {}

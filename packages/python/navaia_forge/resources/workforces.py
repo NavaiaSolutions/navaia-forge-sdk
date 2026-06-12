@@ -112,3 +112,40 @@ class WorkforcesResource(ResourceBase):
     def delete(self, workforce_id: str) -> None:
         """Delete a workforce."""
         self._http.delete(f"/workforces/{workforce_id}")
+
+    # ── Marketplace ───────────────────────────────────────────────
+
+    def publish(
+        self,
+        workforce_id: str,
+        *,
+        tagline: str,
+        category: str,
+        price_cents: int = 0,
+        currency: str = "SAR",
+        cover_url: str | None = None,
+    ) -> Workforce:
+        """List this workforce on the public marketplace (owner-only).
+
+        The listing enters a moderation queue (``moderation_status="pending"``)
+        and becomes publicly visible once an admin approves it.
+        """
+        if price_cents < 0:
+            raise ValueError(f"price_cents must be >= 0, got {price_cents}")
+        body: dict[str, Any] = {
+            "tagline": tagline,
+            "category": category,
+            "price_cents": price_cents,
+            "currency": currency,
+        }
+        if cover_url is not None:
+            body["cover_url"] = cover_url
+        return parse_model(
+            Workforce, self._http.post(f"/workforces/{workforce_id}/publish", body)
+        )
+
+    def unpublish(self, workforce_id: str) -> Workforce:
+        """Remove this workforce's marketplace listing (owner-only)."""
+        return parse_model(
+            Workforce, self._http.post(f"/workforces/{workforce_id}/unpublish", {})
+        )

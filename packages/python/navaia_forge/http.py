@@ -61,6 +61,20 @@ class HttpClient:
         return self._config.api_key
 
     def _build_url(self, path: str) -> str:
+        # Defense-in-depth against path injection: resources interpolate
+        # user-supplied IDs into path strings (e.g. f"/tasks/{task_id}").
+        # A malicious id like "../foo" or "x?override=1" or "//evil.com/x"
+        # could pivot the request away from the configured API. Reject
+        # obviously hostile shapes here so the transport stays a chokepoint.
+        if not path.startswith("/"):
+            raise NavaiaForgeError(0, f"Invalid path (must start with '/'): {path!r}")
+        if "://" in path:
+            raise NavaiaForgeError(0, f"Invalid path (embedded scheme): {path!r}")
+        if path.startswith("//"):
+            raise NavaiaForgeError(0, f"Invalid path (protocol-relative): {path!r}")
+        for segment in path.split("/"):
+            if segment == "..":
+                raise NavaiaForgeError(0, f"Invalid path (traversal): {path!r}")
         base = self._config.base_url.rstrip("/")
         return f"{base}/api/v1{path}"
 
@@ -123,24 +137,56 @@ class HttpClient:
 
         if not response.content:
             return None
-        return response.json()
+        try:
+            return response.json()
+        except ValueError as exc:
+            # Malformed JSON in a 2xx response — surface as a typed error so
+            # callers only ever need to catch NavaiaForgeError.
+            raise NavaiaForgeError(
+                response.status_code,
+                f"Invalid JSON in response: {exc}",
+            ) from exc
 
     # ── Convenience verbs ──────────────────────────────────────
 
-    def get(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        return self.request("GET", path, params=params)
+    def get(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        return self.request("GET", path, params=params, headers=headers)
 
-    def post(self, path: str, body: Any | None = None) -> Any:
-        return self.request("POST", path, json_body=body)
+    def post(
+        self,
+        path: str,
+        body: Any | None = None,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        return self.request("POST", path, json_body=body, headers=headers)
 
-    def put(self, path: str, body: Any | None = None) -> Any:
-        return self.request("PUT", path, json_body=body)
+    def put(
+        self,
+        path: str,
+        body: Any | None = None,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        return self.request("PUT", path, json_body=body, headers=headers)
 
-    def patch(self, path: str, body: Any | None = None) -> Any:
-        return self.request("PATCH", path, json_body=body)
+    def patch(
+        self,
+        path: str,
+        body: Any | None = None,
+        *,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        return self.request("PATCH", path, json_body=body, headers=headers)
 
-    def delete(self, path: str) -> Any:
-        return self.request("DELETE", path)
+    def delete(self, path: str, *, headers: dict[str, str] | None = None) -> Any:
+        return self.request("DELETE", path, headers=headers)
 
     # ── Specialized helpers ────────────────────────────────────
 

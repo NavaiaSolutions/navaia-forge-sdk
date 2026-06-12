@@ -26,8 +26,10 @@ independently:
         open source (this repo)                 closed-source image
 ```
 
-- **The SDK** (this repo) is open source, MIT, published to PyPI and npm.
-  It's a typed HTTP/WebSocket client over the platform API. Nothing more.
+- **The SDK** (this repo) is open source — the Python package on PyPI is
+  Apache-2.0 and the JavaScript package on npm is MIT. The repo umbrella
+  is AGPL-3.0 (see `LICENSE`). It's a typed HTTP/WebSocket client over
+  the platform API. Nothing more.
 - **The backend** is distributed as a signed Docker image on GitHub
   Container Registry. The Python source is compiled to native extensions
   before the image is built, so the runtime image carries no readable
