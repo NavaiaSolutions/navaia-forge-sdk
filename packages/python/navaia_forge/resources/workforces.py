@@ -130,6 +130,8 @@ class WorkforcesResource(ResourceBase):
         The listing enters a moderation queue (``moderation_status="pending"``)
         and becomes publicly visible once an admin approves it.
         """
+        if price_cents < 0:
+            raise ValueError(f"price_cents must be >= 0, got {price_cents}")
         body: dict[str, Any] = {
             "tagline": tagline,
             "category": category,

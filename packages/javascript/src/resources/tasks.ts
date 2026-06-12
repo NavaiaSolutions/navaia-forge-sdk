@@ -16,7 +16,10 @@ import type {
 const TERMINAL_STATUSES: ReadonlySet<string> = new Set([
   "done",
   "failed",
-  "rejected",
+  "cancelled",
+  "waiting_question",
+  "waiting_plan",
+  "waiting_blocked",
 ]);
 
 export class TaskResource {
@@ -88,7 +91,7 @@ export class TaskResource {
   }
 
   /**
-   * Poll until a task reaches a terminal state (done, failed, or rejected).
+   * Poll until a task reaches a terminal state.
    *
    * @param taskId - The task to wait for.
    * @param options - Polling interval and timeout configuration.
