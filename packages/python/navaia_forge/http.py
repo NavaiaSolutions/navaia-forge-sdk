@@ -88,7 +88,7 @@ class HttpClient:
 
     # ── Core request ───────────────────────────────────────────
 
-    def request(
+    def request_raw(
         self,
         method: str,
         path: str,
@@ -97,21 +97,32 @@ class HttpClient:
         params: dict[str, Any] | None = None,
         files: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
-    ) -> Any:
-        """Execute a request, raise typed errors, return parsed JSON or ``None``."""
+    ) -> httpx.Response:
+        """Execute a request and return the raw :class:`httpx.Response`.
+
+        Network/timeout failures are mapped to :class:`NavaiaForgeError`, but
+        no status-code mapping happens here — callers that need the error body
+        (e.g. sync 409 conflicts carrying a ``remote_bundle``) inspect the
+        response themselves, then hand it to :meth:`parse_response`.
+        """
         url = self._build_url(path)
         merged_headers = self._build_headers(headers)
         # httpx does not let you set Content-Type when uploading multipart.
         if json_body is not None and files is None:
             merged_headers.setdefault("Content-Type", "application/json")
 
-        # Filter out None query params and stringify the rest.
+        # Filter out None query params and stringify the rest. Booleans are
+        # lowercased ("true"/"false") so the wire format matches the JS SDK.
         query: dict[str, str] | None = None
         if params:
-            query = {k: str(v) for k, v in params.items() if v is not None}
+            query = {
+                k: (str(v).lower() if isinstance(v, bool) else str(v))
+                for k, v in params.items()
+                if v is not None
+            }
 
         try:
-            response = self._client.request(
+            return self._client.request(
                 method,
                 url,
                 json=json_body if files is None else None,
@@ -124,6 +135,8 @@ class HttpClient:
         except httpx.RequestError as exc:
             raise NavaiaForgeError(0, f"Network error: {exc}") from exc
 
+    def parse_response(self, response: httpx.Response) -> Any:
+        """Map errors to typed exceptions and return parsed JSON or ``None``."""
         if response.status_code == 204:
             return None
 
@@ -146,6 +159,27 @@ class HttpClient:
                 response.status_code,
                 f"Invalid JSON in response: {exc}",
             ) from exc
+
+    def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json_body: Any | None = None,
+        params: dict[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
+        """Execute a request, raise typed errors, return parsed JSON or ``None``."""
+        response = self.request_raw(
+            method,
+            path,
+            json_body=json_body,
+            params=params,
+            files=files,
+            headers=headers,
+        )
+        return self.parse_response(response)
 
     # ── Convenience verbs ──────────────────────────────────────
 
@@ -213,7 +247,11 @@ class HttpClient:
         """GET a binary response body (e.g. document download)."""
         url = self._build_url(path)
         merged_headers = self._build_headers()
-        query = {k: str(v) for k, v in (params or {}).items() if v is not None}
+        query = {
+            k: (str(v).lower() if isinstance(v, bool) else str(v))
+            for k, v in (params or {}).items()
+            if v is not None
+        }
         try:
             response = self._client.get(url, params=query or None, headers=merged_headers)
         except httpx.TimeoutException as exc:

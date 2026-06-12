@@ -11,17 +11,13 @@
  *
  * 409 handling is local to this resource: the generic transport collapses
  * error bodies into a string, which would lose the `remote_bundle` the server
- * returns on conflict. So {@link SyncResource.importBundle} issues a raw fetch
- * and parses the conflict body itself, throwing {@link SyncConflictError}
- * carrying both the local and remote bundles.
+ * returns on conflict. So {@link SyncResource.importBundle} uses `requestRaw`
+ * to inspect the 409 body itself, throwing {@link SyncConflictError} carrying
+ * both the local and remote bundles.
  */
 
-import {
-  errorFromStatus,
-  NavaiaForgeError,
-  SyncConflictError,
-} from "../errors.js";
-import { get } from "../http.js";
+import { SyncConflictError } from "../errors.js";
+import { get, parseResponse, requestRaw } from "../http.js";
 import type {
   ResolvedConfig,
   SyncImportResult,
@@ -80,55 +76,17 @@ export class SyncResource {
     bundle: WorkforceSyncBundle,
     options: ImportOptions = {},
   ): Promise<SyncImportResult> {
-    const force = options.force ?? false;
-    const url = new URL(`/api/v1/sync/import`, this.config.baseUrl);
-    url.searchParams.set("force", String(force));
-
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    };
-    if (this.config.apiKey) {
-      headers["X-API-Key"] = this.config.apiKey;
-    }
-
-    let response: Response;
-    try {
-      response = await fetch(url.toString(), {
-        method: "POST",
-        headers,
-        body: JSON.stringify(bundle),
-        signal: AbortSignal.timeout(this.config.timeout),
-      });
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") {
-        throw new NavaiaForgeError(
-          0,
-          `Request timed out after ${this.config.timeout}ms`,
-        );
-      }
-      throw new NavaiaForgeError(0, `Network error: ${String(err)}`);
-    }
+    // Everything except the 409 interception is delegated to the shared
+    // transport so sync never diverges from the rest of the SDK.
+    const response = await requestRaw(this.config, "POST", "/sync/import", {
+      body: bundle,
+      params: { force: String(options.force ?? false) },
+    });
 
     if (response.status === 409) {
       throw await buildConflictError(response, bundle);
     }
-
-    if (!response.ok) {
-      let message: string;
-      try {
-        const body = (await response.json()) as Record<string, string>;
-        message = body.detail ?? body.error ?? response.statusText;
-      } catch {
-        message = response.statusText;
-      }
-      throw errorFromStatus(response.status, message);
-    }
-
-    if (response.status === 204) {
-      return undefined as unknown as SyncImportResult;
-    }
-    return (await response.json()) as SyncImportResult;
+    return parseResponse<SyncImportResult>(response);
   }
 
   // ── Orchestrated push / pull ───────────────────────────────

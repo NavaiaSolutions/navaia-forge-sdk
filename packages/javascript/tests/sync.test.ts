@@ -145,6 +145,24 @@ describe("SyncResource", () => {
     }
   });
 
+  it("accepts a flat (non-detail) 409 body shape", async () => {
+    const remote = { ...BUNDLE, instance_id: "inst_cloud" };
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, { error: "sync_conflict", remote_bundle: remote }),
+    );
+    const nf = new NavaiaForge({ apiKey: "nf_cloud", baseUrl: "http://cloud" });
+
+    try {
+      await nf.sync.importBundle(BUNDLE);
+      expect.unreachable("should have thrown");
+    } catch (err) {
+      expect(err).toBeInstanceOf(SyncConflictError);
+      const conflict = err as SyncConflictError<WorkforceSyncBundle>;
+      expect(conflict.message).toContain("sync_conflict");
+      expect(conflict.remoteBundle?.instance_id).toBe("inst_cloud");
+    }
+  });
+
   it("maps non-409 import errors via errorFromStatus", async () => {
     fetchMock.mockResolvedValueOnce(
       jsonResponse(422, { detail: "count mismatch" }),

@@ -65,6 +65,9 @@ You need:
   with `eyJ`)
 - About 4 GB RAM and 2 vCPUs for a comfortable single-node deploy
 
+A copy of the compose file ships in this repo as
+[`docker-compose.dist.yml`](docker-compose.dist.yml), or pull the latest:
+
 ```bash
 # Pull the compose file (no source clone needed)
 curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
@@ -277,7 +280,7 @@ cloud.sync.import_from_file("research_team.json")
 ```
 
 A complete, runnable version lives in
-[`examples/python/sync_local_to_cloud.py`](../examples/python/sync_local_to_cloud.py).
+[`examples/python/sync_local_to_cloud.py`](examples/python/sync_local_to_cloud.py).
 The same surface exists in the TypeScript SDK as `nf.sync.push(...)` /
 `nf.sync.pull(...)`.
 

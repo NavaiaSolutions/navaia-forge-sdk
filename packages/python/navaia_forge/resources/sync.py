@@ -12,7 +12,7 @@ duplicating. See ``docs/SYNC_ARCHITECTURE_PLAN.md`` for the normative spec.
 409 handling is local to this resource: the generic transport in
 :mod:`navaia_forge.http` collapses error bodies into a string, which would lose
 the ``remote_bundle`` the server returns on conflict. So :meth:`import_bundle`
-issues a raw request and parses the conflict body itself, raising
+uses :meth:`HttpClient.request_raw` to inspect the 409 body itself, raising
 :class:`SyncConflictError` carrying both the local and remote bundles.
 """
 
@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from ..errors import NavaiaForgeError, SyncConflictError, error_from_status
+from ..errors import SyncConflictError
 from ..types import SyncImportResult, WorkforceSyncBundle
 from ._base import ResourceBase, parse_model
 
@@ -87,40 +87,21 @@ class SyncResource(ResourceBase):
         force: bool,
         local_bundle: WorkforceSyncBundle | dict[str, Any],
     ) -> Any:
-        """Raw POST to ``/sync/import`` that preserves the 409 conflict body."""
-        url = self._http._build_url("/sync/import")
-        headers = self._http._build_headers({"Content-Type": "application/json"})
-        try:
-            response = self._http._client.post(
-                url,
-                json=body,
-                params={"force": str(force).lower()},
-                headers=headers,
-            )
-        except httpx.TimeoutException as exc:
-            raise NavaiaForgeError(0, f"Request timed out: {exc}") from exc
-        except httpx.RequestError as exc:
-            raise NavaiaForgeError(0, f"Network error: {exc}") from exc
+        """POST to ``/sync/import``, intercepting 409 to keep the conflict body.
 
+        Everything else (URL building, auth headers, network-error mapping,
+        status mapping, JSON parsing) is delegated to the shared transport so
+        sync never diverges from the rest of the SDK.
+        """
+        response = self._http.request_raw(
+            "POST",
+            "/sync/import",
+            json_body=body,
+            params={"force": force},
+        )
         if response.status_code == 409:
             raise self._conflict_error(response, local_bundle)
-
-        if not response.is_success:
-            try:
-                data = response.json()
-                detail = data.get("detail") or data.get("error") or response.text
-            except ValueError:
-                detail = response.text or response.reason_phrase
-            raise error_from_status(response.status_code, str(detail))
-
-        if response.status_code == 204 or not response.content:
-            return None
-        try:
-            return response.json()
-        except ValueError as exc:
-            raise NavaiaForgeError(
-                response.status_code, f"Invalid JSON in response: {exc}"
-            ) from exc
+        return self._http.parse_response(response)
 
     @staticmethod
     def _conflict_error(

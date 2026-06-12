@@ -74,7 +74,7 @@ def cloud() -> NavaiaForgeClient:
 @pytest.mark.integration
 def test_export_bundle(httpx_mock, client, base_url, bundle_payload) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/sync/export/wf_1?include_tasks=False&include_conversations=False",
+        url=f"{base_url}/api/v1/sync/export/wf_1?include_tasks=false&include_conversations=false",
         method="GET",
         json=bundle_payload,
     )
@@ -89,7 +89,7 @@ def test_export_bundle_with_runtime_data(
     httpx_mock, client, base_url, bundle_payload
 ) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/sync/export/wf_1?include_tasks=True&include_conversations=True",
+        url=f"{base_url}/api/v1/sync/export/wf_1?include_tasks=true&include_conversations=true",
         method="GET",
         json=bundle_payload,
     )
@@ -97,8 +97,8 @@ def test_export_bundle_with_runtime_data(
         "wf_1", include_tasks=True, include_conversations=True
     )
     request = httpx_mock.get_requests()[0]
-    assert "include_tasks=True" in str(request.url)
-    assert "include_conversations=True" in str(request.url)
+    assert "include_tasks=true" in str(request.url)
+    assert "include_conversations=true" in str(request.url)
 
 
 # ── Import ─────────────────────────────────────────────────
@@ -172,6 +172,45 @@ def test_import_bundle_conflict_raises_with_both_bundles(
 
 
 @pytest.mark.integration
+def test_import_bundle_conflict_flat_body_shape(
+    httpx_mock, client, base_url, bundle_payload
+) -> None:
+    """A flat (non-``detail``-wrapped) 409 body is also accepted."""
+    remote = {**bundle_payload, "instance_id": "inst_cloud"}
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/sync/import?force=false",
+        method="POST",
+        status_code=409,
+        json={"error": "sync_conflict", "remote_bundle": remote},
+    )
+    with pytest.raises(SyncConflictError) as exc_info:
+        client.sync.import_bundle(bundle_payload)
+    err = exc_info.value
+    assert err.message == "sync_conflict"
+    assert isinstance(err.remote_bundle, WorkforceSyncBundle)
+    assert err.remote_bundle.instance_id == "inst_cloud"
+
+
+@pytest.mark.integration
+def test_import_bundle_conflict_non_json_body(
+    httpx_mock, client, base_url, bundle_payload
+) -> None:
+    """A non-JSON 409 body still raises with the default message."""
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/sync/import?force=false",
+        method="POST",
+        status_code=409,
+        content=b"<html>conflict</html>",
+    )
+    with pytest.raises(SyncConflictError) as exc_info:
+        client.sync.import_bundle(bundle_payload)
+    err = exc_info.value
+    assert err.status_code == 409
+    assert err.remote_bundle is None
+    assert err.message == "Remote was modified since last sync"
+
+
+@pytest.mark.integration
 def test_import_bundle_maps_other_errors(
     httpx_mock, client, base_url, bundle_payload
 ) -> None:
@@ -195,7 +234,7 @@ def test_push_exports_local_imports_remote(
     httpx_mock, client, cloud, bundle_payload, import_result_payload
 ) -> None:
     httpx_mock.add_response(
-        url="http://test.local/api/v1/sync/export/wf_1?include_tasks=False&include_conversations=False",
+        url="http://test.local/api/v1/sync/export/wf_1?include_tasks=false&include_conversations=false",
         method="GET",
         json=bundle_payload,
     )
@@ -214,7 +253,7 @@ def test_pull_exports_remote_imports_local(
     httpx_mock, client, cloud, bundle_payload, import_result_payload
 ) -> None:
     httpx_mock.add_response(
-        url="http://cloud.local/api/v1/sync/export/wf_9?include_tasks=False&include_conversations=False",
+        url="http://cloud.local/api/v1/sync/export/wf_9?include_tasks=false&include_conversations=false",
         method="GET",
         json=bundle_payload,
     )
@@ -236,7 +275,7 @@ def test_export_to_file_writes_json(
     httpx_mock, client, base_url, bundle_payload, tmp_path
 ) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/sync/export/wf_1?include_tasks=False&include_conversations=False",
+        url=f"{base_url}/api/v1/sync/export/wf_1?include_tasks=false&include_conversations=false",
         method="GET",
         json=bundle_payload,
     )
