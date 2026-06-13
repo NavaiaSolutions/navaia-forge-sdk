@@ -5,6 +5,7 @@ from .auth import AuthResource
 from .conversations import ConversationsResource
 from .integrations import IntegrationsResource
 from .knowledge import KnowledgeResource
+from .marketplace import MarketplaceResource
 from .observability import ObservabilityResource
 from .setup import SetupResource
 from .sync import SyncResource
@@ -19,6 +20,7 @@ __all__ = [
     "ConversationsResource",
     "IntegrationsResource",
     "KnowledgeResource",
+    "MarketplaceResource",
     "ObservabilityResource",
     "SetupResource",
     "SyncResource",

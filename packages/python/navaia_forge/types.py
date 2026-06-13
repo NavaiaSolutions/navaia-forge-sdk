@@ -28,7 +28,10 @@ TaskStatus = Literal[
     "failed",
     "cancelled",
 ]
-RuntimeMode = Literal["claude_max", "openhands", "genexa_code", "claw_code", "navaia_forge"]
+# The two supported runtimes: Claude Code (`claude_max`) and Navaia Code
+# (`navaia_code`). Model execution is delegated to one of these coding-agent
+# CLIs on the backend host.
+RuntimeMode = Literal["claude_max", "navaia_code"]
 AgentStatus = Literal["working", "idle", "error", "offline"]
 ModelProvider = Literal[
     "anthropic",
@@ -39,7 +42,7 @@ ModelProvider = Literal[
     "claude_max",
     "claw_code",
     "navaia_forge",
-    "genexa_code",
+    "navaia_code",
 ]
 KnowledgeSourceType = Literal["upload", "website", "integration", "blank"]
 DocumentStatus = Literal["processing", "ready", "failed"]
@@ -74,7 +77,10 @@ class Workforce(_Base):
     id: str
     name: str
     description: str = ""
-    runtime_mode: RuntimeMode = "claude_max"
+    # Free-form on the backend (``String(50)``); legacy/internal values may
+    # appear beyond the two supported ``RuntimeMode`` values, so accept any
+    # string here rather than crash on response parsing.
+    runtime_mode: str = "claude_max"
     config_json: dict[str, Any] = Field(default_factory=dict)
     status: str = ""
     # Marketplace fields — populated after publish().
@@ -585,6 +591,39 @@ class TemplateInstantiateResult(_Base):
     description: str = ""
     agents_created: int = 0
     edges_created: int = 0
+
+
+# ── Marketplace ─────────────────────────────────────────────────
+
+
+class MarketplaceListing(_Base):
+    """A published workforce visible in the marketplace catalog.
+
+    Returned by ``GET /marketplace/listings`` (browse) and
+    ``GET /marketplace/listings/{id}`` (detail). Install a listing into your
+    own backend with ``client.marketplace.install(listing.id)``.
+    """
+
+    id: str
+    name: str
+    description: str = ""
+    tagline: str | None = None
+    category: str | None = None
+    cover_url: str | None = None
+    price_cents: int = 0
+    currency: str = "usd"
+    install_count: int = 0
+    published_at: str | None = None
+    seller_id: str | None = None
+    seller_name: str | None = None
+    agent_count: int = 0
+
+
+class MarketplaceListingPage(_Base):
+    """Paginated marketplace listing response (``items`` + ``total``)."""
+
+    items: list[MarketplaceListing] = Field(default_factory=list)
+    total: int = 0
 
 
 # ── Auth ────────────────────────────────────────────────────────

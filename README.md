@@ -217,6 +217,7 @@ Every namespace below works the same way in TypeScript (`nf.*`) and Python (`cli
 | **conversations** | Open chats with workforces, send messages targeted at specific agents | Build chat UIs, support bots, interactive assistants |
 | **knowledge** | Knowledge bases, document upload, semantic search, featured KBs, downloads | Ground agents in your own data via RAG |
 | **templates** | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice; instantiate from a blueprint |
+| **marketplace** | Browse published workforces (`list`, `get`) and `install` them into your backend | Run teams others have published — not just your own |
 | **tools** | Full CRUD over tools (HTTP, MCP, code-exec, custom), featured discovery, attach/detach | Give the workforce hands — let agents call APIs, run code, hit external systems |
 | **integrations** | Manage plugin integrations: list installed, browse `list_plugins`, CRUD | Connect Slack, GitHub, Linear, and other third-party services |
 | **setup** | `options`, `validate`, `complete` | First-run onboarding, provider configuration, key validation |

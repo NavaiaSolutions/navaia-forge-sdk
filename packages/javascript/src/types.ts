@@ -18,7 +18,12 @@ export type TaskStatus =
   | "waiting"
   | "rejected";
 
-export type RuntimeMode = "claude_max" | "openhands";
+/**
+ * The two supported runtimes: Claude Code (`claude_max`) and Navaia Code
+ * (`navaia_code`). Model execution is delegated to one of these coding-agent
+ * CLIs on the backend host.
+ */
+export type RuntimeMode = "claude_max" | "navaia_code";
 
 export type AgentStatus = "working" | "idle" | "error" | "offline";
 
@@ -64,7 +69,13 @@ export interface Workforce {
   readonly id: string;
   readonly name: string;
   readonly description: string;
-  readonly runtime_mode: RuntimeMode;
+  /**
+   * Free-form on the backend (`String(50)`); legacy/internal values may appear
+   * beyond the two supported {@link RuntimeMode} values, so this response field
+   * is a plain string. Use {@link RuntimeMode} when *setting* the mode on
+   * create/update.
+   */
+  readonly runtime_mode: string;
   readonly config_json: Record<string, unknown>;
   readonly status: string;
   readonly created_at: string | null;
@@ -593,6 +604,31 @@ export interface TemplateInstantiateResult {
   readonly description: string;
   readonly agents_created: number;
   readonly edges_created: number;
+}
+
+// ── Marketplace ────────────────────────────────────────────
+
+/**
+ * A published workforce visible in the marketplace catalog.
+ *
+ * Returned by `GET /marketplace/listings` (browse) and
+ * `GET /marketplace/listings/{id}` (detail). Install a listing into your own
+ * backend with `client.marketplace.install(listing.id)`.
+ */
+export interface MarketplaceListing {
+  readonly id: string;
+  readonly name: string;
+  readonly description: string;
+  readonly tagline: string | null;
+  readonly category: string | null;
+  readonly cover_url: string | null;
+  readonly price_cents: number;
+  readonly currency: string;
+  readonly install_count: number;
+  readonly published_at: string | null;
+  readonly seller_id: string | null;
+  readonly seller_name: string | null;
+  readonly agent_count: number;
 }
 
 // ── Auth ───────────────────────────────────────────────────
