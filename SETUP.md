@@ -65,6 +65,9 @@ You need:
   with `eyJ`)
 - About 4 GB RAM and 2 vCPUs for a comfortable single-node deploy
 
+A copy of the compose file ships in this repo as
+[`docker-compose.dist.yml`](docker-compose.dist.yml), or pull the latest:
+
 ```bash
 # Pull the compose file (no source clone needed)
 curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
@@ -210,6 +213,76 @@ them and calling `tasks.create()`. That's the one-stop-shop value.
 
 You can see the full namespace catalog in the
 [main README](../README.md#feature-catalog).
+
+---
+
+## Sync local workforces to the cloud
+
+You can run the backend **locally** (so the compute runs on your machine)
+while still publishing to the live Fareegi cloud — for the marketplace,
+collaboration, and the hosted visual UI. The SDK is the orchestrator: it
+makes the HTTP call to each backend, so the two never talk to each other.
+
+Every entity carries a permanent `origin_id`, so a workforce can make a
+full round-trip — push to cloud, edit in the cloud UI, pull back — without
+ever duplicating.
+
+Point one client at your local backend and another at the cloud:
+
+```python
+import os
+from navaia_forge import NavaiaForgeClient, SyncConflictError
+
+local = NavaiaForgeClient(
+    base_url="http://localhost:8001",
+    api_key=os.environ["NAVAIA_LOCAL_API_KEY"],
+)
+cloud = NavaiaForgeClient(
+    base_url="https://fareegi.navaia.sa",
+    api_key=os.environ["NAVAIA_CLOUD_API_KEY"],
+)
+```
+
+**Push** — export from local, import into cloud:
+
+```python
+result = local.sync.push(wf.id, remote=cloud)
+print(result.action, result.workforce_id)   # "created" | "updated"
+```
+
+**Pull** — bring a marketplace purchase back down to run locally.
+Re-pulling is safe: `origin_id` self-recognition updates in place instead
+of creating a duplicate:
+
+```python
+pulled = local.sync.pull(cloud_workforce_id, remote=cloud)
+```
+
+**Conflict handling** — if the cloud copy changed since the last sync,
+`push`/`import` raises `SyncConflictError` carrying both bundles. Either
+keep the remote version (do nothing) or force-overwrite it:
+
+```python
+try:
+    result = local.sync.push(wf.id, remote=cloud)
+except SyncConflictError as exc:
+    print("remote was modified:", exc.remote_bundle)
+    result = local.sync.push(wf.id, remote=cloud, force=True)
+```
+
+**Portable bundles** — secrets are redacted, so you can also round-trip
+through disk:
+
+```python
+local.sync.export_to_file(wf.id, "research_team.json")
+# … later, on another machine …
+cloud.sync.import_from_file("research_team.json")
+```
+
+A complete, runnable version lives in
+[`examples/python/sync_local_to_cloud.py`](examples/python/sync_local_to_cloud.py).
+The same surface exists in the TypeScript SDK as `nf.sync.push(...)` /
+`nf.sync.pull(...)`.
 
 ---
 

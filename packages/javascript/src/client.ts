@@ -28,6 +28,7 @@ import { IntegrationResource } from "./resources/integrations.js";
 import { KnowledgeResource } from "./resources/knowledge.js";
 import { ObservabilityResource } from "./resources/observability.js";
 import { SetupResource } from "./resources/setup.js";
+import { SyncResource } from "./resources/sync.js";
 import { TaskResource } from "./resources/tasks.js";
 import { TemplateResource } from "./resources/templates.js";
 import { ToolsResource } from "./resources/tools.js";
@@ -80,6 +81,9 @@ export class NavaiaForge {
   /** Auth: profile, login/register/refresh, API key creation, validate. */
   readonly auth: AuthResource;
 
+  /** Two-way workforce sync (local ↔ cloud): export, import, push, pull. */
+  readonly sync: SyncResource;
+
   /** Real-time WebSocket client for task/agent/chat events. */
   readonly ws: NavaiaForgeWs;
 
@@ -101,6 +105,7 @@ export class NavaiaForge {
     this.tools = new ToolsResource(this.config);
     this.setup = new SetupResource(this.config);
     this.auth = new AuthResource(this.config);
+    this.sync = new SyncResource(this.config);
     this.ws = new NavaiaForgeWs(this.config);
   }
 }

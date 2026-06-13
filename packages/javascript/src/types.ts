@@ -677,6 +677,164 @@ export interface PaginatedResponse<T> {
   readonly total: number;
 }
 
+// ── Sync bundles (two-way local ↔ cloud sync) ───────────────
+
+/** Workforce metadata inside a sync bundle. */
+export interface SyncWorkforceBundle {
+  readonly origin_id: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly runtime_mode?: string;
+  readonly config_json?: Record<string, unknown>;
+  readonly status?: string;
+}
+
+/** Agent snapshot inside a sync bundle. */
+export interface SyncAgentBundle {
+  readonly origin_id: string;
+  readonly name: string;
+  readonly role?: string;
+  readonly instructions?: string;
+  readonly model_provider?: string;
+  readonly model_name?: string;
+  readonly escalation_model?: string | null;
+  readonly max_turns?: number;
+  readonly tools?: ReadonlyArray<Record<string, unknown>>;
+  readonly knowledge_bases?: readonly string[];
+  readonly config_json?: Record<string, unknown>;
+  readonly position_x?: number;
+  readonly position_y?: number;
+}
+
+/** Edge snapshot inside a sync bundle (references agents by origin_id). */
+export interface SyncEdgeBundle {
+  readonly origin_id: string;
+  readonly source_origin_id: string;
+  readonly target_origin_id: string;
+  readonly approval_mode?: string;
+  readonly label?: string;
+  readonly condition_expr?: string | null;
+  readonly max_runs?: number | null;
+  readonly task_mode?: string | null;
+}
+
+/** Task log entry inside a sync bundle. */
+export interface SyncTaskLogBundle {
+  readonly event: string;
+  readonly detail?: string;
+  readonly created_at?: string | null;
+}
+
+/** Task snapshot inside a sync bundle. */
+export interface SyncTaskBundle {
+  readonly origin_id: string;
+  readonly title: string;
+  readonly description?: string;
+  readonly status?: string;
+  readonly priority?: string;
+  readonly result?: string | null;
+  readonly error?: string | null;
+  readonly metadata_json?: Record<string, unknown>;
+  readonly agent_origin_id?: string | null;
+  readonly logs?: readonly SyncTaskLogBundle[];
+  readonly started_at?: string | null;
+  readonly completed_at?: string | null;
+  readonly created_at?: string | null;
+}
+
+/** Message snapshot inside a sync bundle. */
+export interface SyncMessageBundle {
+  readonly role: string;
+  readonly content: string;
+  readonly tool_calls?: ReadonlyArray<Record<string, unknown>>;
+  readonly token_count?: number;
+  readonly created_at?: string | null;
+}
+
+/** Conversation snapshot inside a sync bundle. */
+export interface SyncConversationBundle {
+  readonly origin_id: string;
+  readonly title?: string;
+  readonly agent_origin_id?: string | null;
+  readonly summary?: string | null;
+  readonly messages?: readonly SyncMessageBundle[];
+  readonly created_at?: string | null;
+}
+
+/** Knowledge repo metadata inside a sync bundle. */
+export interface SyncKnowledgeRepoBundle {
+  readonly provider?: string;
+  readonly owner?: string;
+  readonly repo?: string;
+  readonly default_branch?: string;
+  readonly requires_reauth?: boolean;
+}
+
+/** Knowledge text content inside a sync bundle. */
+export interface SyncKnowledgeTextBundle {
+  readonly title?: string;
+  readonly content?: string;
+}
+
+/** Knowledge base snapshot inside a sync bundle. */
+export interface SyncKnowledgeBaseBundle {
+  readonly origin_id: string;
+  readonly name: string;
+  readonly description?: string;
+  readonly repos?: readonly SyncKnowledgeRepoBundle[];
+  readonly texts?: readonly SyncKnowledgeTextBundle[];
+}
+
+/** Integration snapshot inside a sync bundle (secrets redacted). */
+export interface SyncIntegrationBundle {
+  readonly origin_id: string;
+  readonly plugin_name: string;
+  readonly display_name?: string;
+  readonly config_json?: Record<string, unknown>;
+  readonly redacted_fields?: readonly string[];
+  readonly status?: string;
+}
+
+/**
+ * Complete portable snapshot of a workforce and all its children.
+ *
+ * Produced by `GET /sync/export/{workforce_id}` and consumed by
+ * `POST /sync/import`.
+ */
+export interface WorkforceSyncBundle {
+  readonly bundle_version: string;
+  readonly exported_at: string;
+  readonly instance_id: string;
+  readonly content_hash: string;
+  readonly workforce: SyncWorkforceBundle;
+  readonly agents: readonly SyncAgentBundle[];
+  readonly edges: readonly SyncEdgeBundle[];
+  readonly tasks: readonly SyncTaskBundle[];
+  readonly conversations: readonly SyncConversationBundle[];
+  readonly knowledge_bases: readonly SyncKnowledgeBaseBundle[];
+  readonly integrations: readonly SyncIntegrationBundle[];
+}
+
+/** Created/updated/deleted counts for one entity type. */
+export interface SyncEntityCounts {
+  readonly created: number;
+  readonly updated: number;
+  readonly deleted: number;
+}
+
+/** Result of importing a sync bundle. */
+export interface SyncImportResult {
+  readonly workforce_id: string;
+  readonly action: "created" | "updated" | "unchanged";
+  readonly agents: SyncEntityCounts;
+  readonly edges: SyncEntityCounts;
+  readonly knowledge_bases: SyncEntityCounts;
+  readonly integrations: SyncEntityCounts;
+  readonly tasks_imported: number;
+  readonly conversations_imported: number;
+  readonly integrations_require_setup: readonly string[];
+}
+
 // ── HTTP layer types ────────────────────────────────────────
 
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

@@ -7,6 +7,8 @@ to specific subclasses by :func:`error_from_status`.
 
 from __future__ import annotations
 
+from typing import Any
+
 
 class NavaiaForgeError(Exception):
     """Base exception for all NavaiaForge SDK errors."""
@@ -57,6 +59,30 @@ class ServerError(NavaiaForgeError):
 
     def __init__(self, status_code: int, message: str = "Server error") -> None:
         super().__init__(status_code, message)
+
+
+class SyncConflictError(NavaiaForgeError):
+    """Raised when a sync push conflicts with remote changes (HTTP 409).
+
+    Carries both bundles so the caller can decide which to keep::
+
+        try:
+            local.sync.push("wf_123", remote=cloud)
+        except SyncConflictError as e:
+            cloud.sync.import_bundle(e.local_bundle, force=True)   # accept local
+            # OR: do nothing (keep remote)
+    """
+
+    def __init__(
+        self,
+        message: str = "Remote was modified since last sync",
+        *,
+        local_bundle: Any = None,
+        remote_bundle: Any = None,
+    ) -> None:
+        super().__init__(409, message)
+        self.local_bundle = local_bundle
+        self.remote_bundle = remote_bundle
 
 
 class TimeoutError(NavaiaForgeError):

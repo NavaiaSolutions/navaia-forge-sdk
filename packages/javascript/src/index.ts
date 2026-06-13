@@ -21,7 +21,10 @@ export {
   AuthenticationError,
   PermissionError,
   NotFoundError,
+  ValidationError,
   RateLimitError,
+  ServerError,
+  SyncConflictError,
   TimeoutError,
 } from "./errors.js";
 
@@ -106,6 +109,21 @@ export type {
   WsAgentStatusEvent,
   WsChatEvent,
   WsSystemEvent,
+  // Sync bundles
+  WorkforceSyncBundle,
+  SyncWorkforceBundle,
+  SyncAgentBundle,
+  SyncEdgeBundle,
+  SyncTaskBundle,
+  SyncTaskLogBundle,
+  SyncMessageBundle,
+  SyncConversationBundle,
+  SyncKnowledgeBaseBundle,
+  SyncKnowledgeRepoBundle,
+  SyncKnowledgeTextBundle,
+  SyncIntegrationBundle,
+  SyncEntityCounts,
+  SyncImportResult,
   // Pagination
   PaginatedResponse,
   // Enums
@@ -132,6 +150,7 @@ export { IntegrationResource } from "./resources/integrations.js";
 export { ToolsResource } from "./resources/tools.js";
 export { SetupResource } from "./resources/setup.js";
 export { AuthResource } from "./resources/auth.js";
+export { SyncResource } from "./resources/sync.js";
 
 // ── HTTP escape hatch ──────────────────────────────────────
 export {

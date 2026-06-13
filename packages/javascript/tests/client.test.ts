@@ -17,6 +17,7 @@ describe("NavaiaForge client", () => {
     expect(nf.tools).toBeDefined();
     expect(nf.setup).toBeDefined();
     expect(nf.auth).toBeDefined();
+    expect(nf.sync).toBeDefined();
     expect(nf.ws).toBeDefined();
   });
 

@@ -45,9 +45,10 @@ function buildHeaders(
 /**
  * Parse the response body and throw a typed error when the request failed.
  *
- * @internal
+ * Exported for callers that need to inspect the raw {@link Response} first
+ * (e.g. sync 409 conflicts) before falling back to the standard handling.
  */
-async function parseResponse<T>(response: Response): Promise<T> {
+export async function parseResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
   }
@@ -91,6 +92,28 @@ export async function request<T>(
     headers?: Record<string, string>;
   } = {},
 ): Promise<T> {
+  const response = await requestRaw(config, method, path, options);
+  return parseResponse<T>(response);
+}
+
+/**
+ * Execute a request and return the raw {@link Response}.
+ *
+ * Network/timeout failures are mapped to {@link NavaiaForgeError}, but no
+ * status-code mapping happens here — callers that need the error body (e.g.
+ * sync 409 conflicts carrying a `remote_bundle`) inspect the response
+ * themselves, then hand it to {@link parseResponse}.
+ */
+export async function requestRaw(
+  config: ResolvedConfig,
+  method: HttpMethod,
+  path: string,
+  options: {
+    body?: unknown;
+    params?: Record<string, string>;
+    headers?: Record<string, string>;
+  } = {},
+): Promise<Response> {
   const url = buildUrl(config.baseUrl, path, options.params);
   const headers = buildHeaders(config.apiKey, options.headers);
 
@@ -104,17 +127,19 @@ export async function request<T>(
     init.body = JSON.stringify(options.body);
   }
 
-  let response: Response;
   try {
-    response = await fetch(url, init);
+    return await fetch(url, init);
   } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") {
+    // AbortSignal.timeout() aborts with a DOMException named "TimeoutError"
+    // (Node 18+/undici and browsers); "AbortError" is kept for older runtimes.
+    if (
+      err instanceof DOMException &&
+      (err.name === "TimeoutError" || err.name === "AbortError")
+    ) {
       throw new NavaiaForgeError(0, `Request timed out after ${config.timeout}ms`);
     }
     throw new NavaiaForgeError(0, `Network error: ${String(err)}`);
   }
-
-  return parseResponse<T>(response);
 }
 
 /** Convenience GET. */

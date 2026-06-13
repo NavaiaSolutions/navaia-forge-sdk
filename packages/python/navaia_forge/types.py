@@ -678,6 +678,179 @@ class WsSystemEvent(_Base):
 WsEvent = WsTaskEvent | WsAgentStatusEvent | WsChatEvent | WsSystemEvent
 
 
+# ── Sync ────────────────────────────────────────────────────────
+
+
+class SyncAgentBundle(_Base):
+    """Agent snapshot inside a sync bundle."""
+
+    origin_id: str
+    name: str
+    role: str = ""
+    instructions: str = ""
+    model_provider: str = "anthropic"
+    model_name: str = "sonnet"
+    escalation_model: str | None = None
+    max_turns: int = 25
+    tools: list[dict[str, Any]] = Field(default_factory=list)
+    knowledge_bases: list[str] = Field(default_factory=list)
+    config_json: dict[str, Any] = Field(default_factory=dict)
+    position_x: float = 0.0
+    position_y: float = 0.0
+
+
+class SyncEdgeBundle(_Base):
+    """Edge snapshot inside a sync bundle."""
+
+    origin_id: str
+    source_origin_id: str
+    target_origin_id: str
+    approval_mode: str = "auto_run"
+    label: str = ""
+    condition_expr: str | None = None
+    max_runs: int | None = None
+    task_mode: str | None = None
+
+
+class SyncTaskLogBundle(_Base):
+    """Task log entry inside a sync bundle."""
+
+    event: str
+    detail: str = ""
+    created_at: str | None = None
+
+
+class SyncTaskBundle(_Base):
+    """Task snapshot inside a sync bundle."""
+
+    origin_id: str
+    title: str
+    description: str = ""
+    status: str = "done"
+    priority: str = "standard"
+    result: str | None = None
+    error: str | None = None
+    metadata_json: dict[str, Any] = Field(default_factory=dict)
+    agent_origin_id: str | None = None
+    logs: list[SyncTaskLogBundle] = Field(default_factory=list)
+    started_at: str | None = None
+    completed_at: str | None = None
+    created_at: str | None = None
+
+
+class SyncMessageBundle(_Base):
+    """Message snapshot inside a sync bundle."""
+
+    role: str
+    content: str
+    tool_calls: list[dict[str, Any]] = Field(default_factory=list)
+    token_count: int = 0
+    created_at: str | None = None
+
+
+class SyncConversationBundle(_Base):
+    """Conversation snapshot inside a sync bundle."""
+
+    origin_id: str
+    title: str = ""
+    agent_origin_id: str | None = None
+    summary: str | None = None
+    messages: list[SyncMessageBundle] = Field(default_factory=list)
+    created_at: str | None = None
+
+
+class SyncKnowledgeRepoBundle(_Base):
+    """Knowledge repo metadata inside a sync bundle."""
+
+    provider: str = "github"
+    owner: str = ""
+    repo: str = ""
+    default_branch: str = "main"
+    requires_reauth: bool = True
+
+
+class SyncKnowledgeTextBundle(_Base):
+    """Knowledge text content inside a sync bundle."""
+
+    title: str = ""
+    content: str = ""
+
+
+class SyncKnowledgeBaseBundle(_Base):
+    """Knowledge base snapshot inside a sync bundle."""
+
+    origin_id: str
+    name: str
+    description: str = ""
+    repos: list[SyncKnowledgeRepoBundle] = Field(default_factory=list)
+    texts: list[SyncKnowledgeTextBundle] = Field(default_factory=list)
+
+
+class SyncIntegrationBundle(_Base):
+    """Integration snapshot inside a sync bundle (secrets redacted)."""
+
+    origin_id: str
+    plugin_name: str
+    display_name: str = ""
+    config_json: dict[str, Any] = Field(default_factory=dict)
+    redacted_fields: list[str] = Field(default_factory=list)
+    status: str = "inactive"
+
+
+class SyncWorkforceBundle(_Base):
+    """Workforce metadata inside a sync bundle."""
+
+    origin_id: str
+    name: str
+    description: str = ""
+    runtime_mode: str = "claude_max"
+    config_json: dict[str, Any] = Field(default_factory=dict)
+    status: str = "active"
+
+
+class WorkforceSyncBundle(_Base):
+    """Complete portable snapshot of a workforce and all its children.
+
+    Produced by ``GET /sync/export/{workforce_id}`` and consumed by
+    ``POST /sync/import``.
+    """
+
+    bundle_version: str = "1.0"
+    exported_at: str = ""
+    instance_id: str = ""
+    content_hash: str = ""
+
+    workforce: SyncWorkforceBundle
+    agents: list[SyncAgentBundle] = Field(default_factory=list)
+    edges: list[SyncEdgeBundle] = Field(default_factory=list)
+    tasks: list[SyncTaskBundle] = Field(default_factory=list)
+    conversations: list[SyncConversationBundle] = Field(default_factory=list)
+    knowledge_bases: list[SyncKnowledgeBaseBundle] = Field(default_factory=list)
+    integrations: list[SyncIntegrationBundle] = Field(default_factory=list)
+
+
+class SyncEntityCounts(_Base):
+    """Created/updated/deleted counts for one entity type."""
+
+    created: int = 0
+    updated: int = 0
+    deleted: int = 0
+
+
+class SyncImportResult(_Base):
+    """Result of importing a sync bundle."""
+
+    workforce_id: str
+    action: str = "created"  # "created" | "updated" | "unchanged"
+    agents: SyncEntityCounts = Field(default_factory=SyncEntityCounts)
+    edges: SyncEntityCounts = Field(default_factory=SyncEntityCounts)
+    knowledge_bases: SyncEntityCounts = Field(default_factory=SyncEntityCounts)
+    integrations: SyncEntityCounts = Field(default_factory=SyncEntityCounts)
+    tasks_imported: int = 0
+    conversations_imported: int = 0
+    integrations_require_setup: list[str] = Field(default_factory=list)
+
+
 # ── Pagination ──────────────────────────────────────────────────
 
 
