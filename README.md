@@ -125,21 +125,9 @@ client.workforces.edges.create(
 ### Give the team shared knowledge
 
 ```python
-kb = client.knowledge.create(name="Product Docs")
-client.knowledge.upload_document(kb_id=kb.id, file_path="./handbook.pdf")
-client.knowledge.attach_to_workforce(workforce_id=wf.id, knowledge_base_id=kb.id)
+kb = client.knowledge.create(name="Product Docs", workforce_id=wf.id)
 # Every agent in the workforce can now retrieve from "Product Docs" via RAG.
-```
-
-### Give the team shared tools
-
-```python
-tool = client.tools.create(
-    name="github-search",
-    type="http",
-    config={"base_url": "https://api.github.com", "auth": "bearer"},
-)
-client.tools.attach_to_workforce(tool_id=tool.id, workforce_id=wf.id)
+results = client.knowledge.search(kb.id, query="deployment checklist")
 ```
 
 ### Run a task across the team
@@ -182,8 +170,8 @@ for msg in client.conversations.messages(conv.id):
 ### Watch your costs and quality
 
 ```python
-client.observability.summary()                       # tokens / spend overview
-client.observability.cost(group_by="model")          # cost broken down by model
+client.observability.summary(workforce_id=wf.id)                # tokens / spend overview
+client.observability.cost(workforce_id=wf.id)                   # cost broken down by model
 client.observability.agent_metrics(agent_id=reviewer.id)        # per-agent perf
 client.observability.agent_evaluations(agent_id=reviewer.id)    # RL evals
 ```
@@ -212,15 +200,13 @@ Every namespace below works the same way in TypeScript (`nf.*`) and Python (`cli
 | Namespace | What it does | Why you'd use it |
 |---|---|---|
 | **workforces** | CRUD workforces; manage edges between agents; link tools and knowledge bases | Define the team and how work flows through it |
-| **agents** | Full CRUD; browse `featured`, `clone`, `export`, attach/detach to workforces, list members | Compose specialists with their own roles, models, and instructions |
-| **tasks** | Submit, approve, reject, retry, stream logs, `wait_for_completion` | Hand work to the team and get results — sync or async |
+| **agents** | Full CRUD, `export` | Compose specialists with their own roles, models, and instructions |
+| **tasks** | Submit, approve, reject, `wait_for_completion` | Hand work to the team and get results — sync or async |
 | **conversations** | Open chats with workforces, send messages targeted at specific agents | Build chat UIs, support bots, interactive assistants |
-| **knowledge** | Knowledge bases, document upload, semantic search, featured KBs, downloads | Ground agents in your own data via RAG |
+| **knowledge** | Knowledge bases, semantic search | Ground agents in your own data via RAG |
 | **templates** | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice; instantiate from a blueprint |
 | **marketplace** | Browse published workforces (`list`, `get`) and `install` them into your backend | Run teams others have published — not just your own |
-| **tools** | Full CRUD over tools (HTTP, MCP, code-exec, custom), featured discovery, attach/detach | Give the workforce hands — let agents call APIs, run code, hit external systems |
 | **integrations** | Manage plugin integrations: list installed, browse `list_plugins`, CRUD | Connect Slack, GitHub, Linear, and other third-party services |
-| **setup** | `options`, `validate`, `complete` | First-run onboarding, provider configuration, key validation |
 | **observability** | Token-usage summary, cost breakdowns, per-agent metrics, RL evaluations, manual usage logging | See what the team is doing, what it costs, and where it's failing |
 | **auth** | `me`, register/login/refresh, API-key creation/validation, OAuth helpers | Power your own UI on top of NavaiaForge |
 | **WebSocket** (`nf.ws` / `NavaiaForgeWs`) | Real-time streams: task status, agent status, chat messages, system events | React the moment something happens — no polling |
