@@ -40,8 +40,6 @@ def test_client_resource_namespaces_attached() -> None:
         "templates",
         "marketplace",
         "integrations",
-        "tools",
-        "setup",
         "auth",
         "sync",
     ):

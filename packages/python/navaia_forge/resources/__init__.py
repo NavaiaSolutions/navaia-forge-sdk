@@ -7,11 +7,9 @@ from .integrations import IntegrationsResource
 from .knowledge import KnowledgeResource
 from .marketplace import MarketplaceResource
 from .observability import ObservabilityResource
-from .setup import SetupResource
 from .sync import SyncResource
 from .tasks import TasksResource
 from .templates import TemplatesResource
-from .tools import ToolsResource
 from .workforces import WorkforcesResource
 
 __all__ = [
@@ -22,10 +20,8 @@ __all__ = [
     "KnowledgeResource",
     "MarketplaceResource",
     "ObservabilityResource",
-    "SetupResource",
     "SyncResource",
     "TasksResource",
     "TemplatesResource",
-    "ToolsResource",
     "WorkforcesResource",
 ]

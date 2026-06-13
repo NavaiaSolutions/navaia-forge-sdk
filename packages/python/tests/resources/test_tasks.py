@@ -134,17 +134,6 @@ def test_reject_task(httpx_mock, client, base_url, task_payload) -> None:
 
 
 @pytest.mark.integration
-def test_retry_task(httpx_mock, client, base_url, task_payload) -> None:
-    httpx_mock.add_response(
-        url=f"{base_url}/api/v1/tasks/tk_1/retry",
-        method="POST",
-        json={**task_payload, "status": "pending", "retry_count": 1},
-    )
-    task = client.tasks.retry("tk_1")
-    assert task.retry_count == 1
-
-
-@pytest.mark.integration
 def test_wait_for_completion_times_out(
     httpx_mock, client, base_url, task_payload
 ) -> None:

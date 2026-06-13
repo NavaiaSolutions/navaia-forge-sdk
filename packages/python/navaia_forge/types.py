@@ -12,7 +12,8 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic_core import PydanticUndefined
 
 # ── Type aliases (string literal unions) ────────────────────────
 
@@ -45,7 +46,6 @@ ModelProvider = Literal[
     "navaia_code",
 ]
 KnowledgeSourceType = Literal["upload", "website", "integration", "blank"]
-DocumentStatus = Literal["processing", "ready", "failed"]
 IntegrationStatus = Literal["connected", "disconnected", "error"]
 WsEventType = Literal[
     "task_created",
@@ -68,6 +68,39 @@ class _Base(BaseModel):
         # Allow round-tripping unknown enum values (e.g. new statuses) as strings.
         use_enum_values=True,
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_null_for_defaulted_fields(cls, data: Any) -> Any:
+        """Treat an explicit ``null`` as "absent" for any field that carries a
+        non-null default.
+
+        The backend regularly sends ``null`` for collection/scalar fields that
+        the SDK models as non-nullable with a default (e.g. ``tool_calls``,
+        ``metadata_json``, ``config_json``). Dropping the ``null`` lets the
+        field's default apply instead of failing validation, so a
+        well-formed-but-null response never crashes the client. Fields whose
+        default is itself ``None`` (genuinely optional) keep their ``null``.
+        """
+        if not isinstance(data, dict):
+            return data
+        cleaned: dict[str, Any] | None = None
+        for name, field in cls.model_fields.items():
+            key = (
+                name
+                if name in data
+                else (field.alias if field.alias and field.alias in data else None)
+            )
+            if key is None or data[key] is not None:
+                continue
+            has_non_null_default = field.default_factory is not None or (
+                field.default is not PydanticUndefined and field.default is not None
+            )
+            if has_non_null_default:
+                if cleaned is None:
+                    cleaned = dict(data)
+                del cleaned[key]
+        return cleaned if cleaned is not None else data
 
 
 # ── Workforces ──────────────────────────────────────────────────
@@ -182,15 +215,6 @@ class AgentCreate(_Base):
     position_y: float = 0
 
 
-class WorkforceMember(_Base):
-    """An agent attached to a workforce with per-workforce overrides."""
-
-    agent: Agent
-    override_json: dict[str, Any] = Field(default_factory=dict)
-    position_x: float = 0.0
-    position_y: float = 0.0
-
-
 class AgentUpdate(_Base):
     name: str | None = None
     role: str | None = None
@@ -293,17 +317,6 @@ class KnowledgeBase(_Base):
     updated_at: str | None = None
 
 
-class KnowledgeDocument(_Base):
-    id: str
-    knowledge_base_id: str
-    filename: str
-    content_type: str = ""
-    size_bytes: int = 0
-    chunk_count: int = 0
-    status: DocumentStatus = "processing"
-    created_at: str | None = None
-
-
 class SearchResult(_Base):
     """A single retrieved chunk from a knowledge-base search."""
 
@@ -321,59 +334,6 @@ class SearchResponse(_Base):
     results: list[SearchResult] = Field(default_factory=list)
     query: str = ""
     total: int = 0
-
-
-class WorkforceKnowledgeBaseLink(_Base):
-    """Attachment record returned when adding a KB to a workforce."""
-
-    knowledge_base: KnowledgeBase
-    added_at: str | None = None
-
-
-# ── Tools ───────────────────────────────────────────────────────
-
-
-class Tool(_Base):
-    """A reusable tool definition (registered with the platform)."""
-
-    id: str
-    owner_id: str | None = None
-    name: str
-    description: str = ""
-    kind: str
-    icon: str | None = None
-    integration_id: str | None = None
-    config_json: dict[str, Any] = Field(default_factory=dict)
-    is_featured: bool = False
-    is_template: bool = False
-    created_at: str | None = None
-    updated_at: str | None = None
-
-
-class ToolCreate(_Base):
-    name: str
-    description: str = ""
-    kind: str
-    icon: str | None = None
-    integration_id: str | None = None
-    config_json: dict[str, Any] | None = None
-
-
-class ToolUpdate(_Base):
-    name: str | None = None
-    description: str | None = None
-    kind: str | None = None
-    icon: str | None = None
-    integration_id: str | None = None
-    config_json: dict[str, Any] | None = None
-
-
-class WorkforceToolLink(_Base):
-    """Attachment record when adding a tool to a workforce."""
-
-    tool: Tool
-    override_json: dict[str, Any] = Field(default_factory=dict)
-    added_at: str | None = None
 
 
 # ── Integrations ────────────────────────────────────────────────
@@ -402,20 +362,6 @@ class AvailablePlugin(_Base):
     version: str = ""
     active: bool = False
     config_schema: dict[str, Any] = Field(default_factory=dict)
-
-
-class SetupOptions(_Base):
-    """Which onboarding paths are enabled in the deployment."""
-
-    navaia_cloud_enabled: bool = False
-    claude_cli_enabled: bool = False
-
-
-class SetupValidateResult(_Base):
-    """Result of ``POST /setup/validate``."""
-
-    status: Literal["healthy", "unhealthy"]
-    message: str = ""
 
 
 # ── Observability ───────────────────────────────────────────────
