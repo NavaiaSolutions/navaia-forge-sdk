@@ -26,6 +26,7 @@ import { AuthResource } from "./resources/auth.js";
 import { ConversationResource } from "./resources/conversations.js";
 import { IntegrationResource } from "./resources/integrations.js";
 import { KnowledgeResource } from "./resources/knowledge.js";
+import { MarketplaceResource } from "./resources/marketplace.js";
 import { ObservabilityResource } from "./resources/observability.js";
 import { SetupResource } from "./resources/setup.js";
 import { SyncResource } from "./resources/sync.js";
@@ -69,6 +70,9 @@ export class NavaiaForge {
   /** Workforce + agent template browsing and instantiation. */
   readonly templates: TemplateResource;
 
+  /** Marketplace catalog: browse, inspect, and install published workforces. */
+  readonly marketplace: MarketplaceResource;
+
   /** Plugin registry + installed integration management. */
   readonly integrations: IntegrationResource;
 
@@ -101,6 +105,7 @@ export class NavaiaForge {
     this.knowledge = new KnowledgeResource(this.config);
     this.observability = new ObservabilityResource(this.config);
     this.templates = new TemplateResource(this.config);
+    this.marketplace = new MarketplaceResource(this.config);
     this.integrations = new IntegrationResource(this.config);
     this.tools = new ToolsResource(this.config);
     this.setup = new SetupResource(this.config);

@@ -24,13 +24,11 @@ def kb_payload() -> dict:
 
 
 @pytest.mark.integration
-def test_list_workforce_kbs_unwraps_attachments(httpx_mock, client, base_url, kb_payload) -> None:
+def test_list_workforce_kbs(httpx_mock, client, base_url, kb_payload) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/workforces/wf_1/knowledge-bases",
+        url=f"{base_url}/api/v1/knowledge-bases?workforce_id=wf_1",
         method="GET",
-        json=[
-            {"knowledge_base": kb_payload, "added_at": "2026-01-01T00:00:00Z"},
-        ],
+        json={"items": [kb_payload], "total": 1},
     )
     kbs = client.knowledge.list("wf_1")
     assert kbs[0].id == "kb_1"
@@ -45,17 +43,6 @@ def test_list_all(httpx_mock, client, base_url, kb_payload) -> None:
     )
     kbs = client.knowledge.list_all()
     assert isinstance(kbs[0], KnowledgeBase)
-
-
-@pytest.mark.integration
-def test_list_featured(httpx_mock, client, base_url, kb_payload) -> None:
-    httpx_mock.add_response(
-        url=f"{base_url}/api/v1/knowledge-bases/featured",
-        method="GET",
-        json={"items": [kb_payload], "total": 1},
-    )
-    kbs = client.knowledge.list_featured()
-    assert kbs[0].name == "Docs"
 
 
 @pytest.mark.integration
@@ -80,6 +67,17 @@ def test_get_knowledge_base(httpx_mock, client, base_url, kb_payload) -> None:
 
 
 @pytest.mark.integration
+def test_update_knowledge_base_uses_patch(httpx_mock, client, base_url, kb_payload) -> None:
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/knowledge-bases/kb_1",
+        method="PATCH",
+        json={**kb_payload, "name": "Updated Docs"},
+    )
+    kb = client.knowledge.update("kb_1", name="Updated Docs")
+    assert kb.name == "Updated Docs"
+
+
+@pytest.mark.integration
 def test_delete_knowledge_base(httpx_mock, client, base_url) -> None:
     httpx_mock.add_response(
         url=f"{base_url}/api/v1/knowledge-bases/kb_1",
@@ -89,31 +87,7 @@ def test_delete_knowledge_base(httpx_mock, client, base_url) -> None:
     assert client.knowledge.delete("kb_1") is None
 
 
-# ── Attachments ───────────────────────────────────────────────
-
-
-@pytest.mark.integration
-def test_attach_to_workforce(httpx_mock, client, base_url, kb_payload) -> None:
-    httpx_mock.add_response(
-        url=f"{base_url}/api/v1/workforces/wf_1/knowledge-bases",
-        method="POST",
-        json={"knowledge_base": kb_payload, "added_at": "2026-01-01T00:00:00Z"},
-    )
-    link = client.knowledge.attach_to_workforce("wf_1", "kb_1")
-    assert link.knowledge_base.id == "kb_1"
-
-
-@pytest.mark.integration
-def test_detach_from_workforce(httpx_mock, client, base_url) -> None:
-    httpx_mock.add_response(
-        url=f"{base_url}/api/v1/workforces/wf_1/knowledge-bases/kb_1",
-        method="DELETE",
-        status_code=204,
-    )
-    assert client.knowledge.detach_from_workforce("wf_1", "kb_1") is None
-
-
-# ── Search & download ────────────────────────────────────────
+# ── Search ───────────────────────────────────────────────────
 
 
 @pytest.mark.integration
@@ -157,12 +131,3 @@ def test_search_with_filters_sends_them(httpx_mock, client, base_url) -> None:
     assert "filters" in body and "alice" in body
 
 
-@pytest.mark.integration
-def test_download_document_returns_bytes(httpx_mock, client, base_url) -> None:
-    httpx_mock.add_response(
-        url=f"{base_url}/api/v1/knowledge-bases/kb_1/documents/doc_1/download",
-        method="GET",
-        content=b"PDF-bytes-here",
-    )
-    data = client.knowledge.download_document("kb_1", "doc_1")
-    assert data == b"PDF-bytes-here"

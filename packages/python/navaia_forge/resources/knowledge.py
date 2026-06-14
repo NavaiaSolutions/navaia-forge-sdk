@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
-import os
 from typing import Any
 
 from ..types import (
     KnowledgeBase,
-    KnowledgeDocument,
     KnowledgeSourceType,
     SearchResponse,
     SearchResult,
-    WorkforceKnowledgeBaseLink,
 )
 from ._base import ResourceBase, parse_list, parse_model
 
 
 class KnowledgeResource(ResourceBase):
-    """Operations for knowledge bases, documents, attachments, and search."""
+    """Operations for knowledge bases and search."""
 
     # ── KB CRUD ───────────────────────────────────────────────
 
@@ -25,26 +22,18 @@ class KnowledgeResource(ResourceBase):
         """List every knowledge base in the caller's library."""
         return parse_list(KnowledgeBase, self._http.get_list("/knowledge-bases"))
 
-    def list_featured(self) -> list[KnowledgeBase]:
-        """List featured / templated knowledge bases."""
+    def list(self, workforce_id: str) -> list[KnowledgeBase]:
+        """List the knowledge bases belonging to a workforce.
+
+        The backend scopes KBs by ``workforce_id`` on the collection endpoint
+        (``GET /knowledge-bases?workforce_id=...``); the param is required.
+        """
         return parse_list(
             KnowledgeBase,
-            self._http.get_list("/knowledge-bases/featured"),
+            self._http.get_list(
+                "/knowledge-bases", params={"workforce_id": workforce_id}
+            ),
         )
-
-    def list(self, workforce_id: str) -> list[KnowledgeBase]:
-        """List knowledge bases attached to a workforce.
-
-        Returns the inner :class:`KnowledgeBase` from each attachment.
-        """
-        payload = self._http.get(f"/workforces/{workforce_id}/knowledge-bases")
-        if not isinstance(payload, list):
-            return []
-        return [
-            KnowledgeBase.model_validate(item["knowledge_base"])
-            for item in payload
-            if isinstance(item, dict) and "knowledge_base" in item
-        ]
 
     def get(self, knowledge_base_id: str) -> KnowledgeBase:
         """Fetch a knowledge base by id."""
@@ -77,58 +66,15 @@ class KnowledgeResource(ResourceBase):
         return parse_model(KnowledgeBase, self._http.post("/knowledge-bases", body))
 
     def update(self, knowledge_base_id: str, **fields: Any) -> KnowledgeBase:
-        """Update a knowledge base (server uses PUT)."""
+        """Update a knowledge base (server uses PATCH)."""
         return parse_model(
             KnowledgeBase,
-            self._http.put(f"/knowledge-bases/{knowledge_base_id}", fields),
+            self._http.patch(f"/knowledge-bases/{knowledge_base_id}", fields),
         )
 
     def delete(self, knowledge_base_id: str) -> None:
         """Delete a knowledge base."""
         self._http.delete(f"/knowledge-bases/{knowledge_base_id}")
-
-    # ── Workforce attachment ──────────────────────────────────
-
-    def attach_to_workforce(
-        self, workforce_id: str, knowledge_base_id: str
-    ) -> WorkforceKnowledgeBaseLink:
-        """Attach an existing KB to a workforce."""
-        return parse_model(
-            WorkforceKnowledgeBaseLink,
-            self._http.post(
-                f"/workforces/{workforce_id}/knowledge-bases",
-                {"knowledge_base_id": knowledge_base_id},
-            ),
-        )
-
-    def detach_from_workforce(
-        self, workforce_id: str, knowledge_base_id: str
-    ) -> None:
-        """Detach a KB from a workforce."""
-        self._http.delete(
-            f"/workforces/{workforce_id}/knowledge-bases/{knowledge_base_id}"
-        )
-
-    # ── Documents ─────────────────────────────────────────────
-
-    def upload_document(
-        self, knowledge_base_id: str, file_path: str
-    ) -> KnowledgeDocument:
-        """Upload a document file to a knowledge base."""
-        filename = os.path.basename(file_path)
-        with open(file_path, "rb") as fh:
-            payload = self._http.upload(
-                f"/knowledge-bases/{knowledge_base_id}/documents",
-                "file",
-                (filename, fh),
-            )
-        return parse_model(KnowledgeDocument, payload)
-
-    def download_document(self, knowledge_base_id: str, document_id: str) -> bytes:
-        """Download the raw bytes for a document."""
-        return self._http.download(
-            f"/knowledge-bases/{knowledge_base_id}/documents/{document_id}/download"
-        )
 
     # ── Search ────────────────────────────────────────────────
 

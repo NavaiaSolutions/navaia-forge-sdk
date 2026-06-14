@@ -286,6 +286,81 @@ The same surface exists in the TypeScript SDK as `nf.sync.push(...)` /
 
 ---
 
+## Use a workforce from the marketplace
+
+Your API key doesn't just see *your* workforces — it sees everything you
+have access to in the catalog: your own published listings plus workforces
+other people published to the marketplace. The `marketplace` namespace lets
+you browse that catalog and **install** a listing into your own backend so
+you can run it.
+
+```python
+from navaia_forge import NavaiaForgeClient
+
+client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_…")
+
+# Browse — filter by category, free-text search, or free-only.
+for listing in client.marketplace.list(category="sales", is_free=True):
+    print(listing.name, "·", listing.tagline, "·", listing.agent_count, "agents")
+
+# Inspect one listing.
+listing = client.marketplace.get("wf_pub_1")
+
+# Install it into YOUR backend. Returns a fresh Workforce you own and can run.
+wf = client.marketplace.install(listing.id)
+task = client.tasks.create(workforce_id=wf.id, title="Kick off the new team.")
+final = client.tasks.wait_for_completion(task.id)
+```
+
+`install` clones the listing's agents, edges, and config into your account.
+Browsing is read-only and unauthenticated-friendly; install requires your
+key and is rate-limited. Paid listings (`price_cents > 0`) reject install
+with HTTP 402 until billing is enabled — catch `NavaiaForgeError` and check
+`status_code`.
+
+The same surface exists in the TypeScript SDK:
+
+```ts
+const listings = await nf.marketplace.list({ category: "sales", isFree: true });
+const wf = await nf.marketplace.install(listings[0].id);
+```
+
+---
+
+## Running agents — the model runtime
+
+NavaiaForge **orchestrates** agents; it does not embed an LLM. Because the
+platform works by spawning and controlling a coding agent, the actual model
+is provided by a **coding-agent CLI installed and authenticated on the
+backend host** — either:
+
+- **[Claude Code](https://www.anthropic.com/claude-code)** — run on your
+  Anthropic Max subscription or API key (`runtime_mode: "claude_max"`), or
+- **Navaia Code** — the multi-model CLI, which can point at any model via
+  OpenRouter (`runtime_mode: "navaia_code"`).
+
+You choose your model **in that CLI**, not in the SDK. The SDK never sees or
+stores model credentials — there is deliberately no API for that. Whatever
+model you authenticate the CLI with is the model your workforces run on. So
+before running a task on a self-hosted backend, make sure one of these CLIs
+is installed and logged in on the machine running the backend container:
+
+```bash
+# Mode A — Claude Code (Anthropic)
+claude --version          # install: https://www.anthropic.com/claude-code
+claude login
+
+# Mode B — Navaia Code (multi-model via OpenRouter)
+navaia-code --version
+export OPENROUTER_API_KEY=sk-or-…
+```
+
+A workforce's `runtime_mode` selects which CLI the backend shells out to.
+That's the entire model-configuration story: pick a CLI, authenticate it,
+and set the workforce's `runtime_mode` to match.
+
+---
+
 ## Bringing your own framework
 
 Some teams want to keep an existing framework (LangGraph, LangChain,

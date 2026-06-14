@@ -114,6 +114,33 @@ def test_send_message_returns_user_message(httpx_mock, client, base_url) -> None
 
 
 @pytest.mark.integration
+def test_send_message_tolerates_null_tool_calls(
+    httpx_mock, client, base_url
+) -> None:
+    """Backend returns ``tool_calls: null`` on chat replies; must not crash."""
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/chat/cv_1",
+        method="POST",
+        json={
+            "user_message": {
+                "id": "msg_n",
+                "conversation_id": "cv_1",
+                "role": "user",
+                "content": "hello",
+                "tool_calls": None,
+                "metadata_json": None,
+            },
+            "assistant_message": None,
+            "conversation_id": "cv_1",
+        },
+    )
+    msg = client.conversations.send_message("cv_1", "hello")
+    assert msg.id == "msg_n"
+    assert msg.tool_calls == []
+    assert msg.metadata_json == {}
+
+
+@pytest.mark.integration
 def test_send_message_falls_back_to_flat_payload(
     httpx_mock, client, base_url
 ) -> None:

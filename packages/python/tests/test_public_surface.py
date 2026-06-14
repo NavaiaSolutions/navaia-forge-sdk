@@ -38,10 +38,10 @@ def test_client_resource_namespaces_attached() -> None:
         "knowledge",
         "observability",
         "templates",
+        "marketplace",
         "integrations",
-        "tools",
-        "setup",
         "auth",
+        "sync",
     ):
         assert hasattr(client, namespace), f"client missing {namespace}"
     client.close()

@@ -74,10 +74,6 @@ class TasksResource(ResourceBase):
             Task, self._http.post(f"/tasks/{task_id}/reject", {"reason": reason})
         )
 
-    def retry(self, task_id: str) -> Task:
-        """Retry a failed task."""
-        return parse_model(Task, self._http.post(f"/tasks/{task_id}/retry"))
-
     def wait_for_completion(
         self,
         task_id: str,

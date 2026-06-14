@@ -98,6 +98,8 @@ export type {
   AgentTemplate,
   AgentTemplateCreate,
   TemplateInstantiateResult,
+  // Marketplace
+  MarketplaceListing,
   // Auth
   User,
   TokenPair,
@@ -146,6 +148,7 @@ export { ConversationResource } from "./resources/conversations.js";
 export { KnowledgeResource } from "./resources/knowledge.js";
 export { ObservabilityResource } from "./resources/observability.js";
 export { TemplateResource, AgentTemplateResource } from "./resources/templates.js";
+export { MarketplaceResource } from "./resources/marketplace.js";
 export { IntegrationResource } from "./resources/integrations.js";
 export { ToolsResource } from "./resources/tools.js";
 export { SetupResource } from "./resources/setup.js";
