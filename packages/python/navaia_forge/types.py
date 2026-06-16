@@ -600,9 +600,11 @@ class TokenPair(_Base):
 class ApiKeyCreated(_Base):
     """Result of ``POST /auth/keys`` — the plaintext key shown only once."""
 
+    id: str = ""
     api_key: str
-    key_hash: str
     name: str = ""
+    last_four: str = ""
+    source: str = ""
     message: str = ""
 
 

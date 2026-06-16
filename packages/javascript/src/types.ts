@@ -652,9 +652,11 @@ export interface TokenPair {
 }
 
 export interface ApiKeyCreated {
+  readonly id: string;
   readonly api_key: string;
-  readonly key_hash: string;
   readonly name: string;
+  readonly last_four: string;
+  readonly source: string;
   readonly message: string;
 }
 

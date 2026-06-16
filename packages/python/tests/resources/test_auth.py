@@ -91,9 +91,11 @@ def test_create_key(httpx_mock, client, base_url) -> None:
         url=f"{base_url}/api/v1/auth/keys",
         method="POST",
         json={
+            "id": "key_1",
             "api_key": "nf_secret_xyz",
-            "key_hash": "hash-xyz",
             "name": "ci",
+            "last_four": "xyz0",
+            "source": "web",
             "message": "Store this key securely; it will not be shown again.",
         },
     )
