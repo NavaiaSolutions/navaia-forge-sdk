@@ -39,7 +39,7 @@ Always point `base_url` at your local backend (e.g. `http://localhost:8001`). Fu
 ## Installation
 
 ```bash
-pip install forge-sdk
+pip install navaia-forge
 ```
 
 ## Quickstart

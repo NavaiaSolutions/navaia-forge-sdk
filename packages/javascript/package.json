@@ -1,5 +1,5 @@
 {
-  "name": "forge-sdk",
+  "name": "navaia-forge",
   "version": "0.2.0",
   "description": "Official TypeScript/JavaScript SDK for the NavaiaForge platform",
   "license": "MIT",

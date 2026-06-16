@@ -1,4 +1,4 @@
-# forge-sdk
+# navaia-forge
 
 Official TypeScript / JavaScript client for the [NavaiaForge](https://navaia.com) AI workforce platform — a typed, real-time client for building **multi-agent AI workforces** that work like teams.
 
@@ -39,13 +39,13 @@ Always point `baseUrl` at your local backend (e.g. `http://localhost:8001`). Ful
 ## Installation
 
 ```bash
-npm install forge-sdk
+npm install navaia-forge
 ```
 
 ## Quickstart
 
 ```ts
-import { NavaiaForge } from "forge-sdk";
+import { NavaiaForge } from "navaia-forge";
 
 const nf = new NavaiaForge({
   baseUrl: "http://localhost:8001", // the backend you started with `docker compose up`
@@ -92,7 +92,7 @@ All resource methods return typed results. Errors throw `NavaiaForgeError` (or a
 ## Real-time events
 
 ```ts
-import { NavaiaForgeWs } from "forge-sdk";
+import { NavaiaForgeWs } from "navaia-forge";
 
 const ws = new NavaiaForgeWs({
   apiKey: "nf_...",
@@ -130,15 +130,15 @@ ws.connect();
 Already have a LangGraph workforce? Run it inside Forge with one wrapper — keep your graph code, gain Forge observability and backend access.
 
 ```bash
-npm install forge-sdk @langchain/core @langchain/langgraph
+npm install navaia-forge @langchain/core @langchain/langgraph
 ```
 
 ```ts
-import { NavaiaForge } from "forge-sdk";
+import { NavaiaForge } from "navaia-forge";
 import {
   LangGraphWorkforce,
   getForgeContext,
-} from "forge-sdk/integrations/langgraph";
+} from "navaia-forge/integrations/langgraph";
 
 // Inside any node — no special wiring beyond the standard `config` arg.
 async function searchNode(state: MyState, config: any) {
