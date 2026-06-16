@@ -1,144 +1,128 @@
 # NavaiaForge SDK — Setup Guide
 
-This guide gets you from zero to "calling NavaiaForge from any repo on any
-machine" in a few minutes. It covers:
+This guide gets you from zero to running AI workforces in a few minutes.
 
-1. Standing up the backend on your own infrastructure (Docker)
-2. Installing the SDK into any project (Python or TypeScript)
-3. Verifying end-to-end with a real workforce
-4. Using NavaiaForge as a complete platform (the recommended path)
-5. Bringing your own framework — LangGraph, LangChain, CrewAI, or anything else
+**The default model:** you run the backend on your own machine. Your
+compute, your LLM keys, your data. The cloud dashboard at
+`fareegi.navaia.sa` is an optional display layer — sync results there
+when you want to visualise or share, but all execution happens locally.
 
 ---
 
-## How the pieces fit
-
-NavaiaForge ships in two layers. They are versioned, released, and used
-independently:
+## Architecture
 
 ```
-   ┌─────────────────────────────┐         ┌────────────────────────────┐
-   │  YOUR CODE / NOTEBOOK / CI  │  HTTP+  │  NavaiaForge backend       │
-   │  + NavaiaForge SDK          │   WS    │  (Docker, self-hosted)     │
-   │  (pip install navaia-forge) │ ──────▶ │  ghcr.io/.../forge-backend │
-   │  (npm install @navaia/forge)│         │  + Postgres / Weaviate /…  │
-   └─────────────────────────────┘         └────────────────────────────┘
-        open source (this repo)                 closed-source image
+Your machine (you own this)                   fareegi.navaia.sa (optional)
+┌────────────────────────────────────┐        ┌─────────────────────────┐
+│  Backend container (Docker)        │  sync  │  Dashboard / UI         │
+│  + Postgres / Weaviate / Redis     │ ─────▶ │  Marketplace catalog    │
+│  + Agent CLI (claude / navaia-code)│        │  Published workforces   │
+│  + YOUR LLM keys                   │        │  User accounts          │
+│                                    │        │                         │
+│  ← Runs everything:               │        │  ← Display only:        │
+│    agent execution, LLM calls,     │        │    no execution         │
+│    tasks, RAG, orchestration       │        │    no LLM keys needed   │
+└────────────────────────────────────┘        └─────────────────────────┘
+         ▲                                              ▲
+         │ SDK (this repo)                              │ browser
+         │ pip install navaia-forge                     │
 ```
 
-- **The SDK** (this repo) is open source — the Python package on PyPI is
-  Apache-2.0 and the JavaScript package on npm is MIT. The repo umbrella
-  is AGPL-3.0 (see `LICENSE`). It's a typed HTTP/WebSocket client over
-  the platform API. Nothing more.
-- **The backend** is distributed as a signed Docker image on GitHub
-  Container Registry. The Python source is compiled to native extensions
-  before the image is built, so the runtime image carries no readable
-  application code. You self-host it; you do not need source access. See
-  [§ "About the backend image"](#about-the-backend-image) for what that
-  actually means.
+There is no local UI. The dashboard lives at `fareegi.navaia.sa` — use
+`client.sync.push()` to send results there when you want to visualise
+them.
 
-You can run any combination:
+- **You pay your LLM provider directly** — Anthropic, OpenRouter, or
+  whatever you authenticate your agent CLI with. NavaiaForge never
+  touches your model credentials.
+- **Your data stays on your machine** — workforces, tasks, knowledge
+  bases, conversations, agent outputs. Nothing leaves unless you
+  explicitly `sync.push()` to the cloud.
+- **The cloud is optional** — you can run entirely offline. The dashboard
+  is there when you want to browse the marketplace, share a workforce,
+  or see results in a visual UI.
 
-| Scenario | Backend | SDK |
-|---|---|---|
-| Local dev, single machine | `docker compose up` on your laptop | `pip install navaia-forge` in another project |
-| Production self-host | Docker on your VM / cluster | SDK in any service that needs to talk to it |
-| Hosted (when available) | `https://api.navaia.com` | Same SDK, just a different `base_url` |
+> **Want managed hosting instead?** If you'd rather not run the backend
+> yourself, contact `info@navaia.sa` for a managed deployment where we
+> run the infrastructure on your behalf. This is not the default path.
 
 ---
 
-## Step 1 — Run the backend
-
-The canonical, end-to-end self-hosting instructions live with the backend:
-**[`NavaiaSolutions/NavaiaForge › docs/SELF_HOSTING.md`](https://github.com/NavaiaSolutions/NavaiaForge/blob/main/docs/SELF_HOSTING.md)**.
-
-If you've never set it up before, read that file. The TL;DR below gets you
-running on a clean machine, but the linked doc is authoritative for
-upgrades, air-gapped installs, backups, and license enforcement modes.
-
-### TL;DR
+## Step 1 — Run the backend locally
 
 You need:
 
 - Docker 24+ with Compose v2 (`docker compose`, not `docker-compose`)
-- A NavaiaForge license token from `licensing@navaia.com` (a JWT starting
-  with `eyJ`)
-- About 4 GB RAM and 2 vCPUs for a comfortable single-node deploy
-
-A copy of the compose file ships in this repo as
-[`docker-compose.dist.yml`](docker-compose.dist.yml), or pull the latest:
+- An OpenRouter API key (https://openrouter.ai/keys) or Claude Code CLI
+- ~4 GB RAM, 2 vCPUs
 
 ```bash
-# Pull the compose file (no source clone needed)
-curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
+# Clone the SDK repo (includes docker-compose.dist.yml and .env.example)
+git clone https://github.com/NavaiaSolutions/navaia-forge-sdk.git
+cd navaia-forge-sdk
 
 # Configure
-cat > .env <<'EOF'
-NAVAIA_LICENSE=eyJhbGciOiJSUzI1NiIs...your-token...
-NAVAIA_LICENSE_ENFORCEMENT=strict
-NAVAIA_BACKEND_VERSION=v1.0.0
-NAVAIA_FRONTEND_VERSION=v1.0.0
-POSTGRES_USER=navaia_forge
-POSTGRES_PASSWORD=change-me-please
-POSTGRES_DB=navaia_forge
-API_PORT=8001
-UI_PORT=3030
-NEXT_PUBLIC_API_URL=http://localhost:8001
-NEXT_PUBLIC_WS_URL=ws://localhost:8001
-SECRET_KEY=$(openssl rand -hex 32)
-EOF
+cp .env.example .env
+# Edit .env — set SECRET_KEY, POSTGRES_PASSWORD, OPENROUTER_API_KEY
 
 # Start
 docker compose -f docker-compose.dist.yml up -d
 
 # Verify
 curl http://localhost:8001/health         # → {"status":"healthy",...}
-curl http://localhost:8001/health/ready   # → {"status":"ready",...}
 ```
 
-Your API is now at `http://localhost:8001`. Optional console at
-`http://localhost:3030`.
-
-### Mint an API key for the SDK
-
-The SDK authenticates with an `nf_...` API key. Two ways to get one:
-
-- **Console** — open `http://localhost:3030`, log in, generate a key in
-  Settings → API Keys.
-- **SDK** — once you have a session token from logging in, you can mint
-  keys programmatically: `client.auth.create_key("ci-runner")`.
-
-Treat the key like any production secret. Rotate via the console.
+Your backend is now at `http://localhost:8001`.
 
 ---
 
-## Step 2 — Install the SDK
+## Step 2 — Configure the agent runtime
 
-The SDK is published. You don't need this repo cloned to use it.
+The backend orchestrates agents but doesn't embed an LLM. It shells out
+to a coding-agent CLI on the host machine. Pick one:
 
-### Python
+### Option A — Navaia Code (multi-model via OpenRouter)
 
 ```bash
-pip install navaia-forge        # Python ≥ 3.10
+# Install Navaia Code CLI
+navaia-code --version
+
+# Set your OpenRouter key (you pay OpenRouter directly)
+export OPENROUTER_API_KEY=sk-or-v1-your-key
+```
+
+Create workforces with `runtime_mode="navaia_code"`.
+
+### Option B — Claude Code (Anthropic)
+
+```bash
+# Install Claude Code
+claude --version   # https://www.anthropic.com/claude-code
+
+# Authenticate (your Anthropic subscription / API key)
+claude login
+```
+
+Create workforces with `runtime_mode="claude_max"`.
+
+That's the entire model-configuration story. The SDK never sees or
+stores your LLM credentials.
+
+---
+
+## Step 3 — Install the SDK
+
+```bash
+pip install navaia-forge        # Python >= 3.10
 ```
 
 ```python
 from navaia_forge import NavaiaForgeClient
 
 client = NavaiaForgeClient(
-    base_url="http://localhost:8001",   # your backend
-    api_key="nf_…",                     # from step 1
+    base_url="http://localhost:8001",   # your local backend
+    api_key="nf_...",                   # from step 4
 )
-```
-
-The SDK targets `{base_url}/api/v1/...` for HTTP and `{base_url}/ws` for
-the WebSocket stream — pass the **bare** backend URL, not the
-`/api/v1` path.
-
-Optional extras:
-
-```bash
-pip install "navaia-forge[langgraph]"   # enables LangGraph integration
 ```
 
 ### TypeScript / JavaScript
@@ -152,415 +136,245 @@ import { NavaiaForge } from "@navaia/forge";
 
 const nf = new NavaiaForge({
   baseUrl: "http://localhost:8001",
-  apiKey:  "nf_…",
+  apiKey:  "nf_...",
 });
 ```
 
-Works in Node ≥ 18 and in modern browsers (CORS configured on the
-backend; see `SELF_HOSTING.md` for production CORS pinning).
+---
+
+## Step 4 — Create an API key
+
+The SDK authenticates with an `nf_...` API key. Two ways to get one:
+
+- **SDK** — after registering or logging in with email/password:
+  ```python
+  client = NavaiaForgeClient(base_url="http://localhost:8001")
+  pair = client.auth.login(email="you@example.com", password="...")
+  # Use the JWT to create a long-lived API key
+  authed = NavaiaForgeClient(base_url="http://localhost:8001", api_key=pair.access_token)
+  key = authed.auth.create_key("my-dev-key")
+  print(key.api_key)  # nf_... — shown once, store it securely
+  ```
 
 ---
 
-## Step 3 — Sanity check
-
-Run this from any repo on your machine. It uses no source from this
-repo — only the published packages.
+## Step 5 — Build and run a workforce
 
 ```python
 from navaia_forge import NavaiaForgeClient
 
 client = NavaiaForgeClient(
     base_url="http://localhost:8001",
-    api_key="nf_…",
+    api_key="nf_...",
 )
 
-wf = client.workforces.create(name="Hello Forge")
-print("created workforce:", wf.id)
+# Create a workforce
+wf = client.workforces.create(name="Research Team")
 
-agent = client.agents.create(
+# Add agents
+researcher = client.agents.create(
     workforce_id=wf.id,
-    name="Echo",
-    role="generalist",
-    instructions="Repeat the user's request, then answer it.",
-    model_provider="anthropic", model_name="claude-sonnet-4-6",
+    name="Researcher",
+    role="research",
+    instructions="Find and summarize information on any topic.",
+    model_provider="anthropic",
+    model_name="sonnet",
+)
+writer = client.agents.create(
+    workforce_id=wf.id,
+    name="Writer",
+    role="writer",
+    instructions="Turn research notes into a polished brief.",
+    model_provider="anthropic",
+    model_name="sonnet",
 )
 
-task = client.tasks.create(workforce_id=wf.id, title="Say hello.")
+# Wire them: researcher → writer
+client.workforces.edges.create(
+    workforce_id=wf.id,
+    source_agent_id=researcher.id,
+    target_agent_id=writer.id,
+)
+
+# Run a task
+task = client.tasks.create(workforce_id=wf.id, title="Survey 2025 LLM papers")
 final = client.tasks.wait_for_completion(task.id)
 print(final.status, final.result)
 ```
 
-If this prints a completed task, your end-to-end install is good.
+Everything runs on your machine — your backend, your LLM key, your
+compute.
 
 ---
 
-## Recommended path — let NavaiaForge be the platform
+## Step 6 (optional) — Sync to the cloud dashboard
 
-The SDK is a thin client, but the backend is doing real work:
-
-- **Workforce graph execution** — agents, edges, routing, retries, approval gates
-- **Shared knowledge bases** — RAG over your documents, scoped to a workforce
-- **Shared tools** — HTTP, MCP, code execution; defined once, reused by every agent
-- **Real-time event stream** — task status, agent status, chat messages over WebSocket
-- **Observability** — tokens, cost, per-agent metrics, RL evaluations
-- **Conversations** — chat UIs scoped to a workforce, targeted at specific agents
-- **Templates** — pre-built workforces (engineering, QA, generalist) you can instantiate in one call
-- **Integrations** — Slack / GitHub / Linear / Telegram / Trello plugins, configured once at the workforce level
-
-If you adopt these primitives, you are not writing routing logic, retry
-logic, RAG plumbing, tool registries, or event buses. You're configuring
-them and calling `tasks.create()`. That's the one-stop-shop value.
-
-You can see the full namespace catalog in the
-[main README](../README.md#feature-catalog).
-
----
-
-## Sync local workforces to the cloud
-
-You can run the backend **locally** (so the compute runs on your machine)
-while still publishing to the live Fareegi cloud — for the marketplace,
-collaboration, and the hosted visual UI. The SDK is the orchestrator: it
-makes the HTTP call to each backend, so the two never talk to each other.
-
-Every entity carries a permanent `origin_id`, so a workforce can make a
-full round-trip — push to cloud, edit in the cloud UI, pull back — without
-ever duplicating.
-
-Point one client at your local backend and another at the cloud:
+Once your workforce is running locally, you can push results to
+`fareegi.navaia.sa` to see them in the hosted dashboard or publish to
+the marketplace. This is **optional** — your workforce works without it.
 
 ```python
 import os
-from navaia_forge import NavaiaForgeClient, SyncConflictError
+from navaia_forge import NavaiaForgeClient
 
+# Your local backend (where execution happens)
 local = NavaiaForgeClient(
     base_url="http://localhost:8001",
     api_key=os.environ["NAVAIA_LOCAL_API_KEY"],
 )
+
+# The cloud dashboard (display only)
 cloud = NavaiaForgeClient(
     base_url="https://fareegi.navaia.sa",
     api_key=os.environ["NAVAIA_CLOUD_API_KEY"],
 )
+
+# Push your workforce to the cloud for display
+result = local.sync.push(workforce_id, remote=cloud)
+print(f"Synced to cloud: {result.action}")
+
+# Now visible at fareegi.navaia.sa in your dashboard
 ```
 
-**Push** — export from local, import into cloud:
+To get a cloud API key, sign up at `fareegi.navaia.sa` and generate
+a key in Settings > API Keys on the dashboard.
+
+### Publish to the marketplace
 
 ```python
-result = local.sync.push(wf.id, remote=cloud)
-print(result.action, result.workforce_id)   # "created" | "updated"
+# After pushing to cloud, publish it for others to discover
+cloud.workforces.publish(
+    result.workforce_id,
+    tagline="Research team that finds and summarizes papers",
+    category="research",
+)
 ```
 
-**Pull** — bring a marketplace purchase back down to run locally.
-Re-pulling is safe: `origin_id` self-recognition updates in place instead
-of creating a duplicate:
+### Install from the marketplace
+
+Other users can browse and install your published workforce:
 
 ```python
-pulled = local.sync.pull(cloud_workforce_id, remote=cloud)
+# Browse
+listings = cloud.marketplace.list(category="research")
+
+# Install into their cloud account
+wf = cloud.marketplace.install(listings[0].id)
+
+# Pull down to their local backend to actually run it
+local.sync.pull(wf.id, remote=cloud)
 ```
 
-**Conflict handling** — if the cloud copy changed since the last sync,
-`push`/`import` raises `SyncConflictError` carrying both bundles. Either
-keep the remote version (do nothing) or force-overwrite it:
-
-```python
-try:
-    result = local.sync.push(wf.id, remote=cloud)
-except SyncConflictError as exc:
-    print("remote was modified:", exc.remote_bundle)
-    result = local.sync.push(wf.id, remote=cloud, force=True)
-```
-
-**Portable bundles** — secrets are redacted, so you can also round-trip
-through disk:
-
-```python
-local.sync.export_to_file(wf.id, "research_team.json")
-# … later, on another machine …
-cloud.sync.import_from_file("research_team.json")
-```
-
-A complete, runnable version lives in
+A complete runnable example:
 [`examples/python/sync_local_to_cloud.py`](examples/python/sync_local_to_cloud.py).
-The same surface exists in the TypeScript SDK as `nf.sync.push(...)` /
-`nf.sync.pull(...)`.
-
----
-
-## Use a workforce from the marketplace
-
-Your API key doesn't just see *your* workforces — it sees everything you
-have access to in the catalog: your own published listings plus workforces
-other people published to the marketplace. The `marketplace` namespace lets
-you browse that catalog and **install** a listing into your own backend so
-you can run it.
-
-```python
-from navaia_forge import NavaiaForgeClient
-
-client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_…")
-
-# Browse — filter by category, free-text search, or free-only.
-for listing in client.marketplace.list(category="sales", is_free=True):
-    print(listing.name, "·", listing.tagline, "·", listing.agent_count, "agents")
-
-# Inspect one listing.
-listing = client.marketplace.get("wf_pub_1")
-
-# Install it into YOUR backend. Returns a fresh Workforce you own and can run.
-wf = client.marketplace.install(listing.id)
-task = client.tasks.create(workforce_id=wf.id, title="Kick off the new team.")
-final = client.tasks.wait_for_completion(task.id)
-```
-
-`install` clones the listing's agents, edges, and config into your account.
-Browsing is read-only and unauthenticated-friendly; install requires your
-key and is rate-limited. Paid listings (`price_cents > 0`) reject install
-with HTTP 402 until billing is enabled — catch `NavaiaForgeError` and check
-`status_code`.
-
-The same surface exists in the TypeScript SDK:
-
-```ts
-const listings = await nf.marketplace.list({ category: "sales", isFree: true });
-const wf = await nf.marketplace.install(listings[0].id);
-```
-
----
-
-## Running agents — the model runtime
-
-NavaiaForge **orchestrates** agents; it does not embed an LLM. Because the
-platform works by spawning and controlling a coding agent, the actual model
-is provided by a **coding-agent CLI installed and authenticated on the
-backend host** — either:
-
-- **[Claude Code](https://www.anthropic.com/claude-code)** — run on your
-  Anthropic Max subscription or API key (`runtime_mode: "claude_max"`), or
-- **Navaia Code** — the multi-model CLI, which can point at any model via
-  OpenRouter (`runtime_mode: "navaia_code"`).
-
-You choose your model **in that CLI**, not in the SDK. The SDK never sees or
-stores model credentials — there is deliberately no API for that. Whatever
-model you authenticate the CLI with is the model your workforces run on. So
-before running a task on a self-hosted backend, make sure one of these CLIs
-is installed and logged in on the machine running the backend container:
-
-```bash
-# Mode A — Claude Code (Anthropic)
-claude --version          # install: https://www.anthropic.com/claude-code
-claude login
-
-# Mode B — Navaia Code (multi-model via OpenRouter)
-navaia-code --version
-export OPENROUTER_API_KEY=sk-or-…
-```
-
-A workforce's `runtime_mode` selects which CLI the backend shells out to.
-That's the entire model-configuration story: pick a CLI, authenticate it,
-and set the workforce's `runtime_mode` to match.
 
 ---
 
 ## Bringing your own framework
 
-Some teams want to keep an existing framework (LangGraph, LangChain,
-CrewAI, AutoGen, LlamaIndex, Haystack, …) for *inside-an-agent* logic
-while letting NavaiaForge handle the workforce-level concerns above.
-That's supported — and in one case (LangGraph) we ship a first-class
-adapter.
+Some teams keep an existing framework (LangGraph, LangChain, CrewAI,
+AutoGen) for inside-agent logic while NavaiaForge handles the
+workforce-level concerns.
 
 ### LangGraph — first-class integration
-
-LangGraph is the only framework with a built-in adapter today. It lets
-you take a compiled LangGraph and run it as a NavaiaForge workforce
-without re-architecting. Token usage and timing flow into Forge
-observability automatically, and any node can call the Forge SDK
-(knowledge search, tools, conversations) through an injected context.
 
 ```bash
 pip install "navaia-forge[langgraph]" langgraph langchain-openai
 ```
 
 ```python
-from langchain_core.runnables import RunnableConfig
-from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
-
 from navaia_forge import NavaiaForgeClient
-from navaia_forge.integrations.langgraph import (
-    LangGraphWorkforce, get_forge_context,
+from navaia_forge.integrations.langgraph import LangGraphWorkforce
+
+client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_...")
+wf = LangGraphWorkforce(
+    graph=your_compiled_graph,
+    client=client,
+    name="research-team",
+    workforce_id="<your-workforce-id>",
 )
-
-# IMPORTANT: annotate `config` as RunnableConfig — LangGraph only injects
-# the config dict into nodes that explicitly opt in via this type hint.
-def search_node(state: dict, config: RunnableConfig) -> dict:
-    forge = get_forge_context(config)          # SDK auto-injected
-    if forge.workforce_id:
-        hits = forge.client.knowledge.search(forge.workforce_id, state["query"])
-        return {"hits": [h.model_dump() for h in hits.results]}
-    return {"hits": []}
-
-def answer_node(state: dict, config: RunnableConfig) -> dict:
-    llm = ChatOpenAI(model="gpt-4o-mini")
-    context = "\n".join(h.get("content", "") for h in state.get("hits", []))
-    return {"answer": str(llm.invoke(f"{state['query']}\n\n{context}").content)}
-
-g = StateGraph(dict)
-g.add_node("search", search_node); g.add_node("answer", answer_node)
-g.set_entry_point("search"); g.add_edge("search", "answer"); g.add_edge("answer", END)
-
-client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_…")
-wf = LangGraphWorkforce(graph=g.compile(), client=client, name="research-team",
-                        workforce_id="<your-forge-workforce-id>")
 print(wf.run({"query": "What are NavaiaForge's design goals?"}))
 ```
 
-A runnable version of this is in
-[`examples/python/langgraph_workforce.py`](../examples/python/langgraph_workforce.py).
+Token usage and timing flow into Forge observability automatically.
+See [`examples/python/langgraph_workforce.py`](examples/python/langgraph_workforce.py).
 
-### LangChain, CrewAI, AutoGen, LlamaIndex, others — interop pattern
+### Other frameworks — interop pattern
 
-There's no dedicated adapter for these today, but the SDK is a plain
-HTTP client — you can always run them alongside NavaiaForge. The pattern
-is the same in every case:
-
-> NavaiaForge owns the *outside* of the agent (which agents exist, how
-> work routes between them, what knowledge / tools they share, what the
-> task lifecycle looks like). The other framework owns the *inside* of
-> a single agent (its prompting strategy, its chain composition, its
-> reasoning loop).
-
-A typical shape:
+NavaiaForge owns the *outside* of the agent (routing, knowledge, tools,
+observability). Your framework owns the *inside* (prompting, chain
+composition, reasoning). Pull context from Forge, run it through your
+framework, push results back:
 
 ```python
-from navaia_forge import NavaiaForgeClient
-# Replace the next two lines with your framework of choice.
-from crewai import Agent, Task, Crew
+# 1. Forge provides the workforce shell + knowledge
+hits = client.knowledge.search(kb_id, "Q3 market shifts")
 
-client = NavaiaForgeClient(base_url="http://localhost:8001", api_key="nf_…")
+# 2. Your framework does the reasoning
+output = your_crew.kickoff(context=hits)
 
-# 1. Forge owns the workforce, edges, knowledge, observability.
-wf = client.workforces.create(name="Research Crew")
-kb = client.knowledge.create(name="Industry Reports")
-client.knowledge.upload_document(knowledge_base_id=kb.id, file_path="./reports.pdf")
-client.knowledge.attach_to_workforce(workforce_id=wf.id, knowledge_base_id=kb.id)
-
-# 2. Your framework drives reasoning *inside* one agent. It pulls
-#    context out of Forge (RAG hits, tool defs) and pushes results back
-#    (task records, conversation messages, usage logs).
-hits = client.knowledge.search(wf.id, "Q3 market shifts")
-crew = Crew(agents=[Agent(role="analyst", goal="Summarize", ...)],
-            tasks=[Task(description=f"Summarize:\n{hits}")])
-output = crew.kickoff()
-
-# 3. Record the run on the Forge side so it lives in the workforce's
-#    task history alongside everything else. Pass the framework's output
-#    via metadata; observability rolls up cost from the SDK calls above.
-client.tasks.create(
-    workforce_id=wf.id,
-    title="Q3 summary",
-    description=str(output),
-    metadata={"framework": "crewai"},
-)
+# 3. Record the result in Forge
+client.tasks.create(workforce_id=wf.id, title="Q3 summary", description=str(output))
 ```
-
-The same shape works for **LangChain** chains, **AutoGen** group chats,
-**LlamaIndex** query engines, or anything else: pull primitives out of
-Forge, run them through your framework, push results back. You give up
-some of the unified-observability story (the framework's internal LLM
-calls aren't auto-instrumented), but everything that crosses the SDK
-boundary is captured.
-
-If the unified observability story matters and you're willing to wrap
-your framework like LangGraph is wrapped, the
-[`integrations/langgraph/`](../packages/python/navaia_forge/integrations/langgraph/)
-package is a good model to copy.
 
 ---
 
 ## About the backend image
 
-The backend is distributed as a closed-source Docker image. Practical
-implications:
+The backend is a closed-source Docker image distributed via GHCR:
 
-- **No source ships with the image.** Application Python files are
-  compiled to native extensions during the image build; the runtime
-  image carries `.so` files, not `.py` source. You cannot read the
-  orchestration / routing logic out of the image, and neither can a
-  customer who downloads it. This is a deterrent against trivial
-  inspection — not a cryptographic guarantee.
-- **The license check is offline.** A short JWT signed by Navaia's
-  private key is verified locally against a public key baked into the
-  image at build time. There are no callbacks, no telemetry, and the
-  check works in air-gapped environments.
-- **Your data stays in your stack.** Postgres, Weaviate, Redis are
-  standard upstream images you control. Workforce definitions, tasks,
-  knowledge base contents, and chat history live in your database — the
-  Navaia-shipped containers don't phone home.
+- **No source ships with the image** — Python files are compiled to
+  native `.so` extensions. You cannot read application logic from the
+  image.
+- **No phone-home** — no callbacks, no telemetry. Works air-gapped.
+- **Your data stays in your stack** — Postgres, Weaviate, Redis are
+  standard images you control.
 
-If you need source-level access for compliance or deep customization,
-contact `licensing@navaia.com` to discuss a source license. The default
-ship is binary-only.
+For source-level access, contact `info@navaia.sa`.
 
 ---
 
-## Common environment variables
-
-These are the variables the SDK and the backend look at most often.
+## Environment variables
 
 ### SDK side
 
-| Var | Used by | Purpose |
-|---|---|---|
-| `NAVAIA_FORGE_BASE_URL` | Examples in `examples/` | The backend URL (e.g. `http://localhost:8001`). The SDK constructor takes `base_url=` directly — env vars are an example convention, not built into the client. |
-| `NAVAIA_FORGE_API_KEY`  | Examples in `examples/` | Your `nf_…` API key. |
-| `NAVAIA_FORGE_WORKFORCE_ID` | LangGraph example | Optional: bind a graph to an existing workforce. |
-| `NAVAIA_FORGE_TASK_ID` | LangGraph example | Optional: report graph progress against an existing task. |
+| Var | Purpose |
+|---|---|
+| `NAVAIA_LOCAL_BASE_URL` | Your local backend (default `http://localhost:8001`) |
+| `NAVAIA_LOCAL_API_KEY` | API key for your local backend |
+| `NAVAIA_CLOUD_BASE_URL` | Cloud dashboard (default `https://fareegi.navaia.sa`) |
+| `NAVAIA_CLOUD_API_KEY` | API key for the cloud (optional, for sync) |
 
-### Backend side (excerpt — see `SELF_HOSTING.md` for the full list)
+### Backend side
 
 | Var | Purpose |
 |---|---|
-| `NAVAIA_LICENSE` | The JWT issued by Navaia. Required. |
-| `NAVAIA_LICENSE_ENFORCEMENT` | `strict` (default), `warn`, or `disabled`. Logged at startup. |
-| `NAVAIA_BACKEND_VERSION` / `NAVAIA_FRONTEND_VERSION` | Image tag pins. |
-| `SECRET_KEY` | App secret. ≥ 32 random bytes. |
-| `POSTGRES_*`, `API_PORT`, `UI_PORT`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL` | Standard service plumbing. |
+| `SECRET_KEY` | App secret. >= 32 random bytes (`openssl rand -hex 32`). |
+| `OPENROUTER_API_KEY` | For `navaia_code` runtime. You pay OpenRouter. |
+| `POSTGRES_*`, `API_PORT` | Standard service plumbing |
 
 ---
 
 ## Troubleshooting
 
-**`pip install navaia-forge` fails with `requires a different Python: 3.9.x`**
-The SDK requires Python ≥ 3.10. Use `python3.10`/`3.11`/`3.12` to create
-the venv: `python3.12 -m venv .venv && .venv/bin/pip install navaia-forge`.
+**`pip install navaia-forge` fails with `requires a different Python`**
+The SDK requires Python >= 3.10. Use `python3.12 -m venv .venv`.
 
-**SDK calls fail with `ConnectionError` / `ECONNREFUSED`**
-The backend isn't reachable at `base_url`. Check
-`docker compose -f docker-compose.dist.yml ps` and
-`curl http://localhost:8001/health`. If the API container is restarting,
-check its logs — most often it's an invalid `NAVAIA_LICENSE`.
+**SDK calls fail with `ConnectionError`**
+Backend isn't running. Check `docker compose ps` and
+`curl http://localhost:8001/health`.
 
-**SDK calls succeed but return `401 Unauthorized`**
-The API key is wrong or revoked. Mint a new one in the console or via
-`client.auth.create_key("…")` after logging in.
+**`401 Unauthorized`**
+API key is wrong or revoked. Generate a new one in the dashboard.
 
-**Backend container exits with `LicenseInvalid` / `LicenseExpired`**
-Your token is bad or past its `exp`. Email `licensing@navaia.com` for a
-replacement. The container exits on purpose so a misconfigured deploy
-fails loudly instead of silently running unauthorized.
+**Tasks fail with "can't reach the language model"**
+The agent CLI isn't configured. See Step 2 — you need either
+`OPENROUTER_API_KEY` set or `claude login` done on the host.
 
-**WebSocket events never arrive**
-Check that `NEXT_PUBLIC_WS_URL` (browser-facing) and the SDK's `base_url`
-(server-facing) both reach the same API container. Behind a reverse
-proxy you also need WebSocket upgrade headers configured (`Upgrade`,
-`Connection`).
+**WebSocket events don't arrive**
+Check that the SDK's `base_url` reaches the backend. Behind a reverse
+proxy, configure WebSocket upgrade headers (`Upgrade`, `Connection`).
 
-**`pip install "navaia-forge[langgraph]"` succeeds but `import navaia_forge.integrations.langgraph` fails**
-The extras pin compatible LangChain/LangGraph minor versions; if you
-have an older `langgraph` already installed in the env, install in a
-fresh venv or upgrade it explicitly.
-
-For anything else that looks like a bug, open an issue on
-[`navaia-forge-sdk`](https://github.com/NavaiaSolutions/navaia-forge-sdk/issues)
-(SDK behaviour) or email `support@navaia.com` (backend / licensing).
+For bugs, open an issue on
+[`navaia-forge-sdk`](https://github.com/NavaiaSolutions/navaia-forge-sdk/issues).
+For backend/licensing: `info@navaia.sa`.
