@@ -7,36 +7,38 @@ Build a workforce, run it, and publish it to the marketplace.
 ## What you will do
 
 1. Run the NavaiaForge backend locally (Docker)
-2. Set up a coding-agent CLI with an LLM provider
-3. Use the SDK to create a workforce with 2-10 agents
-4. Run a task on your workforce and verify results
-5. Sync to the cloud dashboard and publish to the marketplace
-6. Set your price
+2. Install the SDK and get your API keys
+3. Create a workforce with 2-10 agents
+4. Run tasks and chat with your agents
+5. Sync to the cloud and publish to the marketplace
 
 ---
 
 ## Prerequisites
 
 - Docker 24+ with Compose v2
-- Python >= 3.10 or Node.js >= 18
-- An LLM provider API key (OpenRouter recommended — get a key at [openrouter.ai/keys](https://openrouter.ai/keys))
+- Python >= 3.10
+- A NavaiaForge license token (request from `info@navaia.sa`)
+- An OpenRouter API key with credits loaded ([openrouter.ai/keys](https://openrouter.ai/keys))
 
 ---
 
-## Phase 1 — Local backend
+## Phase 1 — Run the backend
 
 Start the backend container on your machine. All agent execution, LLM
 calls, and data storage happen here.
 
 ```bash
-# Pull the compose file
-curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
+# The compose file is included in this repository
+# If you cloned the SDK repo, it's already at docker-compose.dist.yml
+# Otherwise, download it:
+curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/navaia-forge-sdk/main/docker-compose.dist.yml
 
-# Create your .env (fill in your license token and a strong password)
+# Create your .env
 cat > .env <<'EOF'
 NAVAIA_LICENSE=eyJ...your-token...
 NAVAIA_LICENSE_ENFORCEMENT=strict
-NAVAIA_BACKEND_VERSION=v1.0.0
+NAVAIA_BACKEND_VERSION=v1.0.1
 NAVAIA_FRONTEND_VERSION=v1.0.0
 POSTGRES_USER=navaia_forge
 POSTGRES_PASSWORD=change-me-please
@@ -46,6 +48,7 @@ UI_PORT=3030
 NEXT_PUBLIC_API_URL=http://localhost:8001
 NEXT_PUBLIC_WS_URL=ws://localhost:8001
 SECRET_KEY=$(openssl rand -hex 32)
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
 EOF
 
 # Start
@@ -55,70 +58,74 @@ docker compose -f docker-compose.dist.yml up -d
 curl http://localhost:8001/health
 ```
 
+> **Windows users:** the `.env` block above uses bash syntax. On
+> PowerShell or CMD, create the `.env` file manually in a text editor
+> with the same key=value pairs. For `SECRET_KEY`, generate a random
+> value with:
+> ```
+> python -c "import secrets; print(secrets.token_hex(32))"
+> ```
+
 Your local backend: `http://localhost:8001`
 Your local dashboard: `http://localhost:3030`
 
----
-
-## Phase 2 — Agent runtime
-
-The backend orchestrates agents but does not embed an LLM. It delegates
-model execution to a coding-agent CLI on your machine. You need one of
-these installed and authenticated.
-
-### Recommended: Navaia Code + OpenRouter
-
-```bash
-# Install Navaia Code
-navaia-code --version
-
-# Authenticate with your OpenRouter API key
-export OPENROUTER_API_KEY=sk-or-v1-your-key
-```
-
-You will create workforces with `runtime_mode="navaia_code"`.
-
-### Alternative: Claude Code (Anthropic)
-
-```bash
-claude --version      # install: https://www.anthropic.com/claude-code
-claude login          # uses your Anthropic subscription or API key
-```
-
-You will create workforces with `runtime_mode="claude_max"`.
+The backend uses your `OPENROUTER_API_KEY` for both chat and task
+execution. You pay OpenRouter directly — NavaiaForge never touches
+your model credentials.
 
 ---
 
-## Phase 3 — Install the SDK and get your local API key
+## Phase 2 — Install the SDK and get your API key
 
 ```bash
 pip install navaia-forge
 ```
 
-Generate an API key for your local backend. Either:
+### Create an account and API key
 
-- Open `http://localhost:3030`, log in, go to **Settings > API Keys**, generate a key.
-- Or use the SDK:
-  ```python
-  from navaia_forge import NavaiaForgeClient
+**Via the local dashboard (easiest):**
 
-  client = NavaiaForgeClient(base_url="http://localhost:8001")
-  pair = client.auth.login(email="you@example.com", password="...")
-  authed = NavaiaForgeClient(base_url="http://localhost:8001", api_key=pair.access_token)
-  key = authed.auth.create_key("assessment-key")
-  print(key.api_key)   # nf_... — store this, shown once
-  ```
+1. Open `http://localhost:3030`
+2. Sign up with your email and password
+3. Go to **Settings > Manage API keys**
+4. Generate a key — copy it, it is shown only once
+
+**Or via the SDK:**
+
+```python
+from navaia_forge import NavaiaForgeClient
+
+client = NavaiaForgeClient(base_url="http://localhost:8001")
+
+# Register (first time only — use login() after)
+pair = client.auth.register(
+    name="Your Name",
+    email="you@example.com",
+    password="your-password",
+)
+
+# Create a long-lived API key
+authed = NavaiaForgeClient(
+    base_url="http://localhost:8001",
+    api_key=pair.access_token,
+)
+key = authed.auth.create_key("my-key")
+print(key.api_key)   # nf_... — store this, shown once
+```
 
 ---
 
-## Phase 4 — Build your workforce
+## Phase 3 — Build your workforce
 
 Create a workforce with a minimum of **2 agents** and a maximum of
 **10 agents**. The workforce should solve a real problem. You can:
 
-- **Design your own** — pick any domain (sales, research, support, DevOps, content, etc.)
-- **Adapt a prior project** — bring an agent solution you have built before and restructure it as a NavaiaForge workforce
-- **Adapt something you find online** — find a compelling multi-agent setup and recreate it here using the SDK
+- **Design your own** — pick any domain (sales, research, support,
+  DevOps, content, etc.)
+- **Adapt a prior project** — bring an agent solution you have built
+  before and restructure it as a NavaiaForge workforce
+- **Adapt something you find online** — find a compelling multi-agent
+  setup and recreate it here using the SDK
 
 The workforce must be **reasonable and functional** — it should produce
 useful output when given a task.
@@ -130,13 +137,13 @@ from navaia_forge import NavaiaForgeClient
 
 local = NavaiaForgeClient(
     base_url="http://localhost:8001",
-    api_key="nf_...",               # your local key from Phase 3
+    api_key="nf_...",
 )
 
 # Create the workforce
 wf = local.workforces.create(
     name="Research Team",
-    runtime_mode="navaia_code",     # or "claude_max"
+    runtime_mode="navaia_code",
 )
 
 # Add agents (minimum 2, maximum 10)
@@ -146,8 +153,8 @@ researcher = local.agents.create(
     role="research",
     instructions="Find and summarize information on the given topic. "
                  "Provide sources and key findings.",
-    model_provider="openrouter",    # or "anthropic"
-    model_name="anthropic/claude-sonnet-4-20250514",
+    model_provider="openrouter",
+    model_name="anthropic/claude-sonnet-4",
 )
 
 writer = local.agents.create(
@@ -157,7 +164,7 @@ writer = local.agents.create(
     instructions="Take the researcher's findings and produce a clear, "
                  "well-structured brief. Keep it under 500 words.",
     model_provider="openrouter",
-    model_name="anthropic/claude-sonnet-4-20250514",
+    model_name="anthropic/claude-sonnet-4",
 )
 
 # Connect them: researcher -> writer
@@ -166,8 +173,22 @@ local.workforces.edges.create(
     source_agent_id=researcher.id,
     target_agent_id=writer.id,
 )
+```
 
-# Run a task
+> **Important:** use the full OpenRouter model ID (e.g.
+> `anthropic/claude-sonnet-4`, not just `sonnet`). You can browse
+> available models at [openrouter.ai/models](https://openrouter.ai/models).
+
+You are not limited to this structure. Use as many agents and edges as
+your use case requires (within the 2-10 agent range).
+
+---
+
+## Phase 4 — Run and verify
+
+### Run a task
+
+```python
 task = local.tasks.create(
     workforce_id=wf.id,
     title="Survey recent advances in multi-agent AI systems",
@@ -176,64 +197,70 @@ final = local.tasks.wait_for_completion(task.id)
 print(final.status, final.result)
 ```
 
-You are not limited to this structure. Use as many agents and edges as
-your use case requires (within the 2-10 agent range).
+### Chat with your agents
 
----
-
-## Phase 5 — Verify results
-
-Confirm your workforce works:
-
-1. **From the SDK** — print the completed task's `status` and `result`.
-2. **From the local dashboard** — open `http://localhost:3030` and find
-   your workforce and its completed task in the UI.
-
-Both should show the same results.
-
----
-
-## Phase 6 — Connect to the cloud and publish
-
-### 6a. Get a cloud API key
-
-1. Go to [fareegi.navaia.sa](https://fareegi.navaia.sa)
-2. **Sign up** or **log in**
-3. Go to **Settings > API Keys**
-4. Generate a key — this is your cloud API key
-
-### 6b. Sync your workforce to the cloud
+You can also interact with the workforce via conversations:
 
 ```python
-import os
+convo = local.conversations.create(workforce_id=wf.id)
+msg = local.conversations.send_message(
+    convo.id,
+    "What are the top 3 trends in multi-agent AI right now?",
+)
+
+import time
+time.sleep(10)
+
+messages = local.conversations.messages(convo.id)
+for m in messages:
+    print(f"[{m.role}]: {m.content}")
+```
+
+### Verify in the dashboard
+
+Open `http://localhost:3030` and find your workforce. You should see
+your agents, edges, tasks, and conversations in the UI.
+
+---
+
+## Phase 5 — Sync to cloud and publish
+
+### 5a. Get a cloud API key
+
+1. Go to [fareegi.navaia.sa](https://fareegi.navaia.sa)
+2. Click **Get Started** to create an account (or **Sign In** if you
+   have one)
+3. Go to **Settings > Manage API keys**
+4. Generate a key
+
+### 5b. Sync your workforce to the cloud
+
+```python
 from navaia_forge import NavaiaForgeClient
 
-# Local backend (where execution happened)
 local = NavaiaForgeClient(
     base_url="http://localhost:8001",
     api_key="nf_local_...",
 )
 
-# Cloud dashboard (display + marketplace)
 cloud = NavaiaForgeClient(
     base_url="https://fareegi.navaia.sa",
     api_key="nf_cloud_...",
 )
 
-# Push your workforce to the cloud
-result = local.sync.push(wf.id, remote=cloud)
-print(f"Synced: {result.action}")
+result = local.sync.push("your-workforce-id", remote=cloud)
+print(f"Synced: {result.action}, cloud ID: {result.workforce_id}")
 ```
 
-### 6c. Publish to the marketplace
+### 5c. Publish to the marketplace
 
 ```python
 cloud.workforces.publish(
     result.workforce_id,
     tagline="A concise description of what your workforce does",
-    category="research",           # choose an appropriate category
-    price_cents=0,                 # 0 = free, or set your price in cents
-    currency="SAR",                # SAR (default) or USD
+    category="research",
+    price_cents=0,       # 0 = free, or set your price in cents
+    currency="SAR",
 )
 ```
 
@@ -245,13 +272,12 @@ Navaia team verifies it, it becomes visible in the marketplace.
 ## Assessment complete
 
 When your workforce is published to the marketplace, the assessment is
-done. To summarize, you should have:
+done. You should have:
 
 - [ ] A running local backend
-- [ ] A configured agent CLI (Navaia Code or Claude Code) with an LLM provider
 - [ ] A workforce with 2-10 agents, created via the SDK
-- [ ] A completed task demonstrating the workforce works
-- [ ] Results visible in both the SDK output and the local dashboard
+- [ ] At least one completed task or conversation showing the agents work
+- [ ] Results visible in the local dashboard (`localhost:3030`)
 - [ ] The workforce synced to `fareegi.navaia.sa`
 - [ ] The workforce published to the marketplace
 
@@ -260,12 +286,12 @@ done. To summarize, you should have:
 ## Earning from your workforce
 
 You can set a price when you publish (`price_cents`). When another user
-wants to install your workforce:
+wants to buy your workforce:
 
-- **During the early access period** — the Navaia team will reach out to
-  you to confirm the payment and deliver it manually.
-- **After your workforce is verified** — you provide your bank account
-  details and purchases are transferred to you automatically.
+- **During early access** — the Navaia team will reach out to you to
+  confirm the payment and deliver it manually.
+- **After verification** — you provide your bank account details and
+  purchases are transferred to you automatically.
 
 Free workforces (`price_cents=0`) are installable immediately by anyone.
 
@@ -273,8 +299,7 @@ Free workforces (`price_cents=0`) are installable immediately by anyone.
 
 ## Two SDK clients — why?
 
-Throughout the assessment you use **two API keys** pointed at **two
-different servers**:
+You use two API keys pointed at two different servers:
 
 | Client | Base URL | Purpose |
 |--------|----------|---------|
