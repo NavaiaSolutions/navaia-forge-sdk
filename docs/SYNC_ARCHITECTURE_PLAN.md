@@ -552,7 +552,7 @@ await local.sync.pull("wf_cloud_456", cloud);
 ```
 User / SDK              Local Backend              Fareegi Cloud
   │                         │                          │
-  │ pip install navaia-forge│                          │
+  │ pip install forge-sdk   │                          │
   │ docker compose up       │                          │
   │─── create workforce ──▶│                          │
   │─── create agents ─────▶│                          │

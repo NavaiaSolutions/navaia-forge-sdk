@@ -1,12 +1,12 @@
 [project]
-name = "navaia-forge"
+name = "forge-sdk"
 version = "0.2.0"
 description = "Python SDK for the NavaiaForge AI workforce platform"
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.10"
 authors = [
-    { name = "Navaia", email = "dev@navaia.com" },
+    { name = "Navaia", email = "info@navaia.sa" },
 ]
 keywords = ["ai", "agents", "workforce", "orchestration", "sdk"]
 classifiers = [
