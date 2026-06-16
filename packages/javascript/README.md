@@ -1,4 +1,4 @@
-# @navaia/forge
+# forge-sdk
 
 Official TypeScript / JavaScript client for the [NavaiaForge](https://navaia.com) AI workforce platform — a typed, real-time client for building **multi-agent AI workforces** that work like teams.
 
@@ -29,7 +29,7 @@ Your options: run it on your **laptop** (dev / learning), on your **own VM or cl
 
 ```bash
 curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
-# create .env with your NAVAIA_LICENSE token, then:
+# create .env with your secrets (see .env.example), then:
 docker compose -f docker-compose.dist.yml up -d
 # → API at http://localhost:8001
 ```
@@ -39,13 +39,13 @@ Always point `baseUrl` at your local backend (e.g. `http://localhost:8001`). Ful
 ## Installation
 
 ```bash
-npm install @navaia/forge
+npm install forge-sdk
 ```
 
 ## Quickstart
 
 ```ts
-import { NavaiaForge } from "@navaia/forge";
+import { NavaiaForge } from "forge-sdk";
 
 const nf = new NavaiaForge({
   baseUrl: "http://localhost:8001", // the backend you started with `docker compose up`
@@ -92,7 +92,7 @@ All resource methods return typed results. Errors throw `NavaiaForgeError` (or a
 ## Real-time events
 
 ```ts
-import { NavaiaForgeWs } from "@navaia/forge";
+import { NavaiaForgeWs } from "forge-sdk";
 
 const ws = new NavaiaForgeWs({
   apiKey: "nf_...",
@@ -130,15 +130,15 @@ ws.connect();
 Already have a LangGraph workforce? Run it inside Forge with one wrapper — keep your graph code, gain Forge observability and backend access.
 
 ```bash
-npm install @navaia/forge @langchain/core @langchain/langgraph
+npm install forge-sdk @langchain/core @langchain/langgraph
 ```
 
 ```ts
-import { NavaiaForge } from "@navaia/forge";
+import { NavaiaForge } from "forge-sdk";
 import {
   LangGraphWorkforce,
   getForgeContext,
-} from "@navaia/forge/integrations/langgraph";
+} from "forge-sdk/integrations/langgraph";
 
 // Inside any node — no special wiring beyond the standard `config` arg.
 async function searchNode(state: MyState, config: any) {

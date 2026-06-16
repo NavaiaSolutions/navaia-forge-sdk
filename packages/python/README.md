@@ -29,7 +29,7 @@ Your options: run it on your **laptop** (dev / learning), on your **own VM or cl
 
 ```bash
 curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
-# create .env with your NAVAIA_LICENSE token, then:
+# create .env with your secrets (see .env.example), then:
 docker compose -f docker-compose.dist.yml up -d
 # → API at http://localhost:8001
 ```
@@ -39,7 +39,7 @@ Always point `base_url` at your local backend (e.g. `http://localhost:8001`). Fu
 ## Installation
 
 ```bash
-pip install navaia-forge
+pip install forge-sdk
 ```
 
 ## Quickstart

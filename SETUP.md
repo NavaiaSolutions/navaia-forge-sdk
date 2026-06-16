@@ -25,7 +25,7 @@ Your machine (you own this)                   fareegi.navaia.sa (optional)
 └────────────────────────────────────┘        └─────────────────────────┘
          ▲                                              ▲
          │ SDK (this repo)                              │ browser
-         │ pip install navaia-forge                     │
+         │ pip install forge-sdk                     │
 ```
 
 There is no local UI. The dashboard lives at `fareegi.navaia.sa` — use
@@ -113,7 +113,7 @@ stores your LLM credentials.
 ## Step 3 — Install the SDK
 
 ```bash
-pip install navaia-forge        # Python >= 3.10
+pip install forge-sdk        # Python >= 3.10
 ```
 
 ```python
@@ -128,11 +128,11 @@ client = NavaiaForgeClient(
 ### TypeScript / JavaScript
 
 ```bash
-npm install @navaia/forge
+npm install forge-sdk
 ```
 
 ```ts
-import { NavaiaForge } from "@navaia/forge";
+import { NavaiaForge } from "forge-sdk";
 
 const nf = new NavaiaForge({
   baseUrl: "http://localhost:8001",
@@ -279,7 +279,7 @@ workforce-level concerns.
 ### LangGraph — first-class integration
 
 ```bash
-pip install "navaia-forge[langgraph]" langgraph langchain-openai
+pip install "forge-sdk[langgraph]" langgraph langchain-openai
 ```
 
 ```python
@@ -357,7 +357,7 @@ For source-level access, contact `info@navaia.sa`.
 
 ## Troubleshooting
 
-**`pip install navaia-forge` fails with `requires a different Python`**
+**`pip install forge-sdk` fails with `requires a different Python`**
 The SDK requires Python >= 3.10. Use `python3.12 -m venv .venv`.
 
 **SDK calls fail with `ConnectionError`**

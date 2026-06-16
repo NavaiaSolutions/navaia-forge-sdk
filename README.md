@@ -2,8 +2,8 @@
 
 **Build AI workforces that work like a team — from code, from the UI, or both.**
 
-[![npm version](https://img.shields.io/npm/v/@navaia/forge)](https://www.npmjs.com/package/@navaia/forge)
-[![PyPI version](https://img.shields.io/pypi/v/navaia-forge)](https://pypi.org/project/navaia-forge/)
+[![npm version](https://img.shields.io/npm/v/forge-sdk)](https://www.npmjs.com/package/forge-sdk)
+[![PyPI version](https://img.shields.io/pypi/v/forge-sdk)](https://pypi.org/project/forge-sdk/)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
 NavaiaForge is a platform for building **multi-agent AI workforces** — groups of specialized agents that share context, hand off work to each other, draw on shared knowledge, call shared tools, and stream results back to you in real time. This repo contains the official **TypeScript** and **Python** SDKs.
@@ -210,11 +210,11 @@ Every namespace below works the same way in TypeScript (`nf.*`) and Python (`cli
 ### TypeScript / JavaScript
 
 ```bash
-npm install @navaia/forge
+npm install forge-sdk
 ```
 
 ```ts
-import { NavaiaForge } from "@navaia/forge";
+import { NavaiaForge } from "forge-sdk";
 
 const nf = new NavaiaForge({
   apiKey: "nf_your_api_key",
@@ -242,7 +242,7 @@ console.log(result.result);
 ### Python
 
 ```bash
-pip install navaia-forge
+pip install forge-sdk
 ```
 
 ```python
