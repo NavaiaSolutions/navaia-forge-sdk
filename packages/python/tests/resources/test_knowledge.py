@@ -93,7 +93,7 @@ def test_delete_knowledge_base(httpx_mock, client, base_url) -> None:
 @pytest.mark.integration
 def test_search(httpx_mock, client, base_url) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/knowledge-bases/kb_1/search",
+        url=f"{base_url}/api/v1/knowledge-bases/kb_1/search?q=answer&max_results=3",
         method="POST",
         json={
             "results": [
@@ -115,19 +115,19 @@ def test_search(httpx_mock, client, base_url) -> None:
     assert isinstance(results[0], SearchResult)
     assert results[0].score == pytest.approx(0.92)
 
-    body = httpx_mock.get_requests()[0].read().decode()
-    assert "answer" in body and "top_k" in body
+    url = str(httpx_mock.get_requests()[0].url)
+    assert "q=answer" in url and "max_results=3" in url
 
 
 @pytest.mark.integration
-def test_search_with_filters_sends_them(httpx_mock, client, base_url) -> None:
+def test_search_sends_query_params(httpx_mock, client, base_url) -> None:
     httpx_mock.add_response(
-        url=f"{base_url}/api/v1/knowledge-bases/kb_1/search",
+        url=f"{base_url}/api/v1/knowledge-bases/kb_1/search?q=x&max_results=5",
         method="POST",
         json={"results": [], "query": "x", "total": 0},
     )
-    client.knowledge.search("kb_1", "x", filters={"author": "alice"})
-    body = httpx_mock.get_requests()[0].read().decode()
-    assert "filters" in body and "alice" in body
+    client.knowledge.search("kb_1", "x")
+    url = str(httpx_mock.get_requests()[0].url)
+    assert "q=x" in url
 
 

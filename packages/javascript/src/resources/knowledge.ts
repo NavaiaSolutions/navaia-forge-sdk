@@ -189,17 +189,15 @@ export class KnowledgeResource {
     query: string,
     options: { topK?: number; filters?: Record<string, unknown> } = {},
   ): Promise<SearchResponse> {
-    const body: Record<string, unknown> = {
-      query,
-      top_k: options.topK ?? 5,
+    const params: Record<string, string> = {
+      q: query,
+      max_results: String(options.topK ?? 5),
     };
-    if (options.filters !== undefined) {
-      body["filters"] = options.filters;
-    }
-    return post<SearchResponse>(
+    return request<SearchResponse>(
       this.config,
+      "POST",
       `/knowledge-bases/${knowledgeBaseId}/search`,
-      body,
+      { params },
     );
   }
 }

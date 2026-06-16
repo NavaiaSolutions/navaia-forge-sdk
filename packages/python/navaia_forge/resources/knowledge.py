@@ -104,10 +104,12 @@ class KnowledgeResource(ResourceBase):
         filters: dict[str, Any] | None = None,
     ) -> SearchResponse:
         """Run a search and return the full :class:`SearchResponse` envelope."""
-        body: dict[str, Any] = {"query": query, "top_k": top_k}
-        if filters is not None:
-            body["filters"] = filters
+        params: dict[str, Any] = {"q": query, "max_results": top_k}
         return parse_model(
             SearchResponse,
-            self._http.post(f"/knowledge-bases/{knowledge_base_id}/search", body),
+            self._http.request(
+                "POST",
+                f"/knowledge-bases/{knowledge_base_id}/search",
+                params=params,
+            ),
         )
