@@ -125,21 +125,6 @@ client = NavaiaForgeClient(
 )
 ```
 
-### TypeScript / JavaScript
-
-```bash
-npm install navaia-forge
-```
-
-```ts
-import { NavaiaForge } from "navaia-forge";
-
-const nf = new NavaiaForge({
-  baseUrl: "http://localhost:8001",
-  apiKey:  "nf_...",
-});
-```
-
 ---
 
 ## Step 4 — Create an API key

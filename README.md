@@ -2,11 +2,10 @@
 
 **Build AI workforces that work like a team — from code, from the UI, or both.**
 
-[![npm version](https://img.shields.io/npm/v/navaia-forge)](https://www.npmjs.com/package/navaia-forge)
 [![PyPI version](https://img.shields.io/pypi/v/navaia-forge)](https://pypi.org/project/navaia-forge/)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
-NavaiaForge is a platform for building **multi-agent AI workforces** — groups of specialized agents that share context, hand off work to each other, draw on shared knowledge, call shared tools, and stream results back to you in real time. This repo contains the official **TypeScript** and **Python** SDKs.
+NavaiaForge is a platform for building **multi-agent AI workforces** — groups of specialized agents that share context, hand off work to each other, draw on shared knowledge, call shared tools, and stream results back to you in real time. This repo contains the official **Python** SDK.
 
 The SDK is a complete client over the same backend that powers the NavaiaForge dashboard. Use it:
 
@@ -19,7 +18,7 @@ The SDK is a complete client over the same backend that powers the NavaiaForge d
 
 NavaiaForge has two pieces:
 
-1. **The SDK** (this repo) — a typed HTTP client you `pip install` or `npm install`.
+1. **The SDK** (this repo) — a typed HTTP client you `pip install`.
 2. **The backend** — a Docker container you run on your machine. It stores workforces, executes agents, holds knowledge bases, and streams events.
 
 **All execution happens on your machine.** You bring your own LLM keys (Anthropic, OpenRouter), you run the container, you own the data. One Docker command to start:
@@ -176,7 +175,7 @@ client.auth.google_login_url()           # build OAuth start URLs for your front
 
 ## Feature catalog
 
-Every namespace below works the same way in TypeScript (`nf.*`) and Python (`client.*`).
+Every namespace below is available on `client.*`.
 
 | Namespace | What it does | Why you'd use it |
 |---|---|---|
@@ -206,40 +205,6 @@ Every namespace below works the same way in TypeScript (`nf.*`) and Python (`cli
 ---
 
 ## Installation
-
-### TypeScript / JavaScript
-
-```bash
-npm install navaia-forge
-```
-
-```ts
-import { NavaiaForge } from "navaia-forge";
-
-const nf = new NavaiaForge({
-  apiKey: "nf_your_api_key",
-  baseUrl: "http://localhost:8001", // your self-hosted backend (see SETUP.md)
-});
-
-const workforce = await nf.workforces.create({ name: "Research Team" });
-const agent = await nf.agents.create({
-  workforce_id: workforce.id,
-  name: "Researcher",
-  role: "research",
-  instructions: "Find and summarize information on any given topic.",
-  model_provider: "anthropic",
-  model_name: "sonnet",
-});
-const task = await nf.tasks.create({
-  workforce_id: workforce.id,
-  agent_id: agent.id,
-  title: "Survey 2025 LLM efficiency papers",
-});
-const result = await nf.tasks.waitForCompletion(task.id);
-console.log(result.result);
-```
-
-### Python
 
 ```bash
 pip install navaia-forge
@@ -282,8 +247,8 @@ Pre-built workforce templates live in [`templates/`](./templates/):
 - **Navaia Workforce** — general-purpose multi-agent team
 - **QA Workforce** — automated testing and quality assurance
 
-```ts
-const result = await nf.templates.instantiate("engineering-workforce", "My Team");
+```python
+result = client.templates.instantiate(template_id="engineering-workforce", name="My Team")
 ```
 
 ---
@@ -292,12 +257,10 @@ const result = await nf.templates.instantiate("engineering-workforce", "My Team"
 
 Runnable end-to-end examples in [`examples/`](./examples/):
 
-- [Quickstart (Python)](./examples/python/quickstart.py)
-- [Quickstart (TypeScript)](./examples/javascript/quickstart.ts)
-- [Multi-Agent Workforce (Python)](./examples/python/create_workforce.py)
-- [Multi-Agent Workforce (TypeScript)](./examples/javascript/create-workforce.ts)
-- [Task Monitoring (Python)](./examples/python/monitor_tasks.py)
-- [Task Monitoring (TypeScript)](./examples/javascript/monitor-tasks.ts)
+- [Quickstart](./examples/python/quickstart.py)
+- [Multi-Agent Workforce](./examples/python/create_workforce.py)
+- [Task Monitoring](./examples/python/monitor_tasks.py)
+- [Sync Local to Cloud](./examples/python/sync_local_to_cloud.py)
 
 ---
 
