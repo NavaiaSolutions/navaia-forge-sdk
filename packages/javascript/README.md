@@ -28,7 +28,7 @@ The SDK exposes every primitive directly.
 Your options: run it on your **laptop** (dev / learning), on your **own VM or cluster** (production), or **air-gapped on-prem** (compliance). Same image, same SDK code, just a different `baseUrl`.
 
 ```bash
-curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
+curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/navaia-forge-sdk/main/docker-compose.dist.yml
 # create .env with your secrets (see .env.example), then:
 docker compose -f docker-compose.dist.yml up -d
 # → API at http://localhost:8001

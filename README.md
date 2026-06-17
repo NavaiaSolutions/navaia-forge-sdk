@@ -24,7 +24,7 @@ NavaiaForge has two pieces:
 **All execution happens on your machine.** You bring your own LLM keys (Anthropic, OpenRouter), you run the container, you own the data. One Docker command to start:
 
 ```bash
-curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/NavaiaForge/main/docker-compose.dist.yml
+curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/navaia-forge-sdk/main/docker-compose.dist.yml
 # Configure .env — see SETUP.md
 docker compose -f docker-compose.dist.yml up -d
 ```
