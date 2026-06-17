@@ -1,17 +1,17 @@
 # ─────────────────────────────────────────────────────────────────
-# NavaiaForge — distribution stack (closed-source backend image).
+# NavaiaForge — local backend stack.
 #
-# This compose file pulls a pre-built, Cython-compiled image from
-# GHCR. Customers do NOT need source access — set NAVAIA_LICENSE in
-# .env and run `docker compose -f docker-compose.dist.yml up -d`.
+# Run the full backend locally: API, Postgres, Weaviate, Redis.
+# No license required — just bring your OpenRouter API key.
 #
-# Use the matching frontend image (also published to GHCR) or omit
-# the UI service if you only need the API.
+# Usage:
+#   cp .env.example .env   # edit with your values
+#   docker compose -f docker-compose.dist.yml up -d
 # ─────────────────────────────────────────────────────────────────
 
 services:
   navaia-forge-api:
-    image: ghcr.io/navaiasolutions/navaia-forge-backend:${NAVAIA_BACKEND_VERSION:-v1.0.1}
+    image: ghcr.io/navaiasolutions/navaia-forge-backend:${NAVAIA_BACKEND_VERSION:-latest}
     container_name: navaia-forge-api
     pull_policy: always
     ports:
@@ -22,9 +22,6 @@ services:
       REDIS_URL: redis://redis:6379/0
       WEAVIATE_URL: http://weaviate:8080
       WEAVIATE_API_KEY: ${WEAVIATE_API_KEY:-}
-      # ── License — required to start ────────────────────────
-      NAVAIA_LICENSE: ${NAVAIA_LICENSE:?Set NAVAIA_LICENSE in .env to a token issued by Navaia}
-      NAVAIA_LICENSE_ENFORCEMENT: ${NAVAIA_LICENSE_ENFORCEMENT:-strict}
     depends_on:
       postgres:
         condition: service_healthy
@@ -39,21 +36,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
-    networks:
-      - navaia-forge
-
-  navaia-forge-ui:
-    image: ghcr.io/navaiasolutions/navaia-forge-frontend:${NAVAIA_FRONTEND_VERSION:-latest}
-    container_name: navaia-forge-ui
-    pull_policy: always
-    ports:
-      - "${UI_PORT:-3030}:3000"
-    environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8001}
-      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8001}
-    depends_on:
-      - navaia-forge-api
-    restart: unless-stopped
     networks:
       - navaia-forge
 

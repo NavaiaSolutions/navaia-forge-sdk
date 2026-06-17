@@ -18,7 +18,6 @@ Build a workforce, run it, and publish it to the marketplace.
 
 - Docker 24+ with Compose v2
 - Python >= 3.10
-- A NavaiaForge license token (request from `info@navaia.sa`)
 - An OpenRouter API key with credits loaded ([openrouter.ai/keys](https://openrouter.ai/keys))
 
 ---
@@ -34,21 +33,16 @@ calls, and data storage happen here.
 # Otherwise, download it:
 curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/navaia-forge-sdk/main/docker-compose.dist.yml
 
-# Create your .env
+# Create your .env (or copy from .env.example)
 cat > .env <<'EOF'
-NAVAIA_LICENSE=eyJ...your-token...
-NAVAIA_LICENSE_ENFORCEMENT=strict
-NAVAIA_BACKEND_VERSION=v1.0.1
-NAVAIA_FRONTEND_VERSION=v1.0.0
+SECRET_KEY=$(openssl rand -hex 32)
 POSTGRES_USER=navaia_forge
 POSTGRES_PASSWORD=change-me-please
 POSTGRES_DB=navaia_forge
 API_PORT=8001
-UI_PORT=3030
-NEXT_PUBLIC_API_URL=http://localhost:8001
-NEXT_PUBLIC_WS_URL=ws://localhost:8001
-SECRET_KEY=$(openssl rand -hex 32)
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
+WEAVIATE_API_KEY=$(openssl rand -hex 32)
+ALLOWED_ORIGINS=http://localhost:3030,http://localhost:3000
 EOF
 
 # Start
@@ -67,7 +61,6 @@ curl http://localhost:8001/health
 > ```
 
 Your local backend: `http://localhost:8001`
-Your local dashboard: `http://localhost:3030`
 
 The backend uses your `OPENROUTER_API_KEY` for both chat and task
 execution. You pay OpenRouter directly — NavaiaForge never touches
@@ -83,14 +76,7 @@ pip install navaia-forge
 
 ### Create an account and API key
 
-**Via the local dashboard (easiest):**
-
-1. Open `http://localhost:3030`
-2. Sign up with your email and password
-3. Go to **Settings > Manage API keys**
-4. Generate a key — copy it, it is shown only once
-
-**Or via the SDK:**
+**Via the SDK:**
 
 ```python
 from navaia_forge import NavaiaForgeClient
@@ -216,11 +202,6 @@ for m in messages:
     print(f"[{m.role}]: {m.content}")
 ```
 
-### Verify in the dashboard
-
-Open `http://localhost:3030` and find your workforce. You should see
-your agents, edges, tasks, and conversations in the UI.
-
 ---
 
 ## Phase 5 — Sync to cloud and publish
@@ -277,7 +258,6 @@ done. You should have:
 - [ ] A running local backend
 - [ ] A workforce with 2-10 agents, created via the SDK
 - [ ] At least one completed task or conversation showing the agents work
-- [ ] Results visible in the local dashboard (`localhost:3030`)
 - [ ] The workforce synced to `fareegi.navaia.sa`
 - [ ] The workforce published to the marketplace
 
