@@ -81,7 +81,13 @@ class HttpClient:
     def _build_headers(self, extra: dict[str, str] | None = None) -> dict[str, str]:
         headers: dict[str, str] = {"Accept": "application/json"}
         if self._config.api_key:
-            headers["X-API-Key"] = self._config.api_key
+            key = self._config.api_key
+            # JWT tokens (from login/register) must go as Bearer auth;
+            # long-lived API keys (nf_...) go as X-API-Key.
+            if key.startswith("eyJ"):
+                headers["Authorization"] = f"Bearer {key}"
+            else:
+                headers["X-API-Key"] = key
         if extra:
             headers.update(extra)
         return headers

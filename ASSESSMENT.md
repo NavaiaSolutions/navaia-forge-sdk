@@ -33,20 +33,26 @@ calls, and data storage happen here.
 # Otherwise, download it:
 curl -fLO https://raw.githubusercontent.com/NavaiaSolutions/navaia-forge-sdk/main/docker-compose.dist.yml
 
-# Create your .env (or copy from .env.example)
-cat > .env <<'EOF'
-SECRET_KEY=$(openssl rand -hex 32)
-POSTGRES_USER=navaia_forge
-POSTGRES_PASSWORD=change-me-please
-POSTGRES_DB=navaia_forge
-API_PORT=8001
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-WEAVIATE_API_KEY=$(openssl rand -hex 32)
-ALLOWED_ORIGINS=http://localhost:3030,http://localhost:3000
-EOF
+# Create your .env
+cp .env.example .env
+# Edit .env — set your OPENROUTER_API_KEY and POSTGRES_PASSWORD
 
 # Start
 docker compose -f docker-compose.dist.yml up -d
+
+# Wait for all services to be healthy (~30 seconds), then run database setup
+docker exec navaia-forge-api python -c "
+import asyncio, app.auth.models, app.auth.api_key_models, app.hosting.models
+import app.agents.models, app.workforces.models, app.tasks.models
+import app.conversations.models, app.knowledge.models, app.integrations.models
+import app.observability.models, app.templates.models, app.ratings.models
+import app.sync.models, app.sync.instance
+from app.agents.models import Base; from app.deps import engine
+async def s():
+    async with engine.begin() as c: await c.run_sync(Base.metadata.create_all)
+    print('Database ready')
+asyncio.run(s())
+"
 
 # Verify
 curl http://localhost:8001/health
