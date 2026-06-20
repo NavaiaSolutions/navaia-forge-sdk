@@ -40,31 +40,31 @@ cp .env.example .env
 # Start
 docker compose -f docker-compose.dist.yml up -d
 
-# Wait for all services to be healthy (~30 seconds), then run database setup
-docker exec navaia-forge-api python -c "
-import asyncio, app.auth.models, app.auth.api_key_models, app.hosting.models
-import app.agents.models, app.workforces.models, app.tasks.models
-import app.conversations.models, app.knowledge.models, app.integrations.models
-import app.observability.models, app.templates.models, app.ratings.models
-import app.sync.models, app.sync.instance
-from app.agents.models import Base; from app.deps import engine
-async def s():
-    async with engine.begin() as c: await c.run_sync(Base.metadata.create_all)
-    print('Database ready')
-asyncio.run(s())
-"
+# Wait for all services to be healthy (~30 seconds), then set up the database
+docker cp scripts/setup_db.py navaia-forge-api:/tmp/
+docker exec navaia-forge-api python /tmp/setup_db.py
 
 # Verify
 curl http://localhost:8001/health
 ```
 
-> **Windows users:** the `.env` block above uses bash syntax. On
-> PowerShell or CMD, create the `.env` file manually in a text editor
-> with the same key=value pairs. For `SECRET_KEY`, generate a random
-> value with:
-> ```
-> python -c "import secrets; print(secrets.token_hex(32))"
-> ```
+> **Windows users:**
+>
+> - Create the `.env` file manually in a text editor (copy `.env.example`
+>   and fill in your values). For `SECRET_KEY`, generate a random value:
+>   ```
+>   python -c "import secrets; print(secrets.token_hex(32))"
+>   ```
+> - In PowerShell, `curl` is an alias for `Invoke-WebRequest`. Use
+>   `curl.exe` instead (or `Invoke-WebRequest`):
+>   ```
+>   curl.exe http://localhost:8001/health
+>   ```
+> - If you downloaded only `docker-compose.dist.yml` (without cloning),
+>   also download the setup script:
+>   ```
+>   curl.exe -fLO https://raw.githubusercontent.com/NavaiaSolutions/navaia-forge-sdk/main/scripts/setup_db.py
+>   ```
 
 Your local backend: `http://localhost:8001`
 

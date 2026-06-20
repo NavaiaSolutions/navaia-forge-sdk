@@ -69,18 +69,8 @@ cp .env.example .env
 docker compose -f docker-compose.dist.yml up -d
 
 # Wait ~30 seconds for services to be healthy, then set up the database
-docker exec navaia-forge-api python -c "
-import asyncio, app.auth.models, app.auth.api_key_models, app.hosting.models
-import app.agents.models, app.workforces.models, app.tasks.models
-import app.conversations.models, app.knowledge.models, app.integrations.models
-import app.observability.models, app.templates.models, app.ratings.models
-import app.sync.models, app.sync.instance
-from app.agents.models import Base; from app.deps import engine
-async def s():
-    async with engine.begin() as c: await c.run_sync(Base.metadata.create_all)
-    print('Database ready')
-asyncio.run(s())
-"
+docker cp scripts/setup_db.py navaia-forge-api:/tmp/
+docker exec navaia-forge-api python /tmp/setup_db.py
 
 # Verify
 curl http://localhost:8001/health         # → {"status":"healthy",...}

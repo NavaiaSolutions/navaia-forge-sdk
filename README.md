@@ -141,8 +141,8 @@ result = client.templates.instantiate(template_id="engineering-workforce", name=
 ### Have a conversation with an agent
 
 ```python
-conv = client.conversations.create(workforce_id=wf.id)
-client.conversations.send_message(conv.id, content="What did the reviewer flag?", agent_id=reviewer.id)
+conv = client.conversations.create(workforce_id=wf.id, agent_id=reviewer.id)
+client.conversations.send_message(conv.id, "What did the reviewer flag?")
 for msg in client.conversations.messages(conv.id):
     print(msg.role, msg.content)
 ```
@@ -160,7 +160,7 @@ client.observability.agent_evaluations(agent_id=reviewer.id)    # RL evals
 
 ```python
 client.integrations.list_plugins()  # browse available plugins (Slack, GitHub, Linear, ...)
-client.integrations.create(plugin_name="slack", display_name="Eng Slack", config={...})
+client.integrations.create(wf.id, plugin_name="slack", display_name="Eng Slack", config_json={...})
 ```
 
 ### Authenticate users in your own UI

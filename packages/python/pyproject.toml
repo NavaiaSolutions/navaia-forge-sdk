@@ -43,10 +43,10 @@ langgraph = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/navaia/navaia-forge"
-Repository = "https://github.com/navaia/navaia-forge"
-Documentation = "https://github.com/navaia/navaia-forge#readme"
-Issues = "https://github.com/navaia/navaia-forge/issues"
+Homepage = "https://github.com/NavaiaSolutions/navaia-forge-sdk"
+Repository = "https://github.com/NavaiaSolutions/navaia-forge-sdk"
+Documentation = "https://github.com/NavaiaSolutions/navaia-forge-sdk#readme"
+Issues = "https://github.com/NavaiaSolutions/navaia-forge-sdk/issues"
 
 [build-system]
 requires = ["hatchling"]

@@ -29,7 +29,7 @@ class HttpConfig:
 
     base_url: str
     api_key: str
-    timeout: float
+    timeout: float = 60.0
 
 
 class HttpClient:
