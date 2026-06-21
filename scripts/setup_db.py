@@ -29,6 +29,7 @@ import app.templates.models  # noqa: F401
 import app.ratings.models  # noqa: F401
 import app.sync.models  # noqa: F401
 import app.sync.instance  # noqa: F401
+import app.scheduler.models  # noqa: F401
 
 from app.agents.models import Base
 from app.deps import engine
