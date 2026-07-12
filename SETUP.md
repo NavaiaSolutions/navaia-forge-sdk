@@ -68,13 +68,28 @@ cp .env.example .env
 # Start
 docker compose -f docker-compose.dist.yml up -d
 
-# Wait ~30 seconds for services to be healthy, then set up the database
+# Wait ~30 seconds for services to be healthy, then set up the database.
+# The backend image does NOT auto-migrate — this creates all tables.
 docker cp scripts/setup_db.py navaia-forge-api:/tmp/
-docker exec navaia-forge-api python /tmp/setup_db.py
+docker exec navaia-forge-api python /tmp/setup_db.py    # → "Database ready"
 
 # Verify
 curl http://localhost:8001/health         # → {"status":"healthy",...}
 ```
+
+> **Windows — Git Bash / MSYS2:** the `docker exec` above fails with
+> `can't open file '/app/C:/Users/.../setup_db.py'`. MSYS rewrites the Unix
+> `/tmp/...` argument into a Windows path before Docker sees it. Disable the
+> conversion for that one command:
+>
+> ```bash
+> MSYS_NO_PATHCONV=1 docker exec navaia-forge-api python /tmp/setup_db.py
+> # or double the leading slash, which MSYS leaves untouched:
+> docker exec navaia-forge-api python //tmp/setup_db.py
+> ```
+>
+> **Windows — PowerShell / CMD:** the command works as written; only `curl`
+> differs (it is an alias for `Invoke-WebRequest`) — use `curl.exe` to verify.
 
 Your backend is now at `http://localhost:8001`.
 
@@ -111,6 +126,23 @@ Create workforces with `runtime_mode="claude_max"`.
 
 That's the entire model-configuration story. The SDK never sees or
 stores your LLM credentials.
+
+### Match `model_name` to your runtime
+
+The two runtimes take **different** model-name conventions. Using the wrong
+form is the most common reason a task fails at run time with *"can't reach the
+language model"* even though the backend is healthy:
+
+| Runtime | Configure | `model_provider` | `model_name` (example) |
+|---|---|---|---|
+| `navaia_code` | `OPENROUTER_API_KEY` in `.env` | `openrouter` | `anthropic/claude-sonnet-4` (**full** OpenRouter ID) |
+| `claude_max` | `claude login` on host | `anthropic` | `sonnet` (short alias) |
+
+A bare `model_name="sonnet"` is **only** valid under `claude_max`. Under
+`navaia_code` you must pass the full OpenRouter model ID — browse them at
+[openrouter.ai/models](https://openrouter.ai/models). The examples in
+`examples/python/` target `claude_max`; if you set up OpenRouter above, use the
+`navaia_code` column instead.
 
 ---
 
@@ -157,8 +189,12 @@ client = NavaiaForgeClient(
     api_key="nf_...",
 )
 
-# Create a workforce
-wf = client.workforces.create(name="Research Team")
+# Create a workforce. This example uses the claude_max runtime, so the
+# agents below use model_provider="anthropic" / model_name="sonnet".
+# If you set up OpenRouter (Step 2, Option A), use runtime_mode="navaia_code"
+# with model_provider="openrouter" and a full model ID like
+# "anthropic/claude-sonnet-4" — see the table in Step 2.
+wf = client.workforces.create(name="Research Team", runtime_mode="claude_max")
 
 # Add agents
 researcher = client.agents.create(

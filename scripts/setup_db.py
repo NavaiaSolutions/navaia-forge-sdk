@@ -3,7 +3,11 @@
 Run this once after starting the backend for the first time:
 
     docker cp scripts/setup_db.py navaia-forge-api:/tmp/
-    docker exec -e PYTHONPATH=/app navaia-forge-api python /tmp/setup_db.py
+    docker exec navaia-forge-api python /tmp/setup_db.py
+
+The script adds /app to sys.path itself, so no PYTHONPATH is needed. On
+Windows Git Bash / MSYS, prefix the exec with MSYS_NO_PATHCONV=1 (or use
+//tmp/setup_db.py) so the /tmp path is not rewritten to a host path.
 """
 
 import sys
