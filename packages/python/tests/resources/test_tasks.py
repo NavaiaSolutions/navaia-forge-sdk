@@ -75,6 +75,44 @@ def test_approve_task(httpx_mock, client, base_url, task_payload) -> None:
     )
     task = client.tasks.approve("tk_1")
     assert task.status == "in_progress"
+    # The backend REQUIRES a JSON body on /approve (a body-less POST is 422).
+    body = httpx_mock.get_requests()[0].read().decode()
+    assert body.strip() == "{}"
+
+
+@pytest.mark.integration
+def test_approve_task_with_response(httpx_mock, client, base_url, task_payload) -> None:
+    """Answering a waiting_question delivers the operator's text in the body."""
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks/tk_1/approve",
+        method="POST",
+        json={**task_payload, "status": "in_progress"},
+    )
+    client.tasks.approve("tk_1", response="APPROVED — send the first ten only.")
+    body = httpx_mock.get_requests()[0].read().decode()
+    assert "response" in body
+    assert "first ten" in body
+
+
+@pytest.mark.integration
+def test_get_task_parses_logs(httpx_mock, client, base_url, task_payload) -> None:
+    """Lifecycle events returned by GET /tasks/{id} surface as Task.logs."""
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks/tk_1",
+        method="GET",
+        json={
+            **task_payload,
+            "logs": [
+                {"id": "lg_1", "task_id": "tk_1", "event": "submitted",
+                 "detail": "Task submitted via api", "created_at": "2026-01-01T00:00:00Z"},
+                {"id": "lg_2", "task_id": "tk_1", "event": "completed",
+                 "detail": "Agent signaled DONE", "created_at": "2026-01-01T00:05:00Z"},
+            ],
+        },
+    )
+    task = client.tasks.get("tk_1")
+    assert [log.event for log in task.logs] == ["submitted", "completed"]
+    assert task.logs[0].detail == "Task submitted via api"
 
 
 @pytest.mark.integration

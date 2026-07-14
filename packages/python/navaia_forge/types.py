@@ -233,6 +233,14 @@ class AgentUpdate(_Base):
 # ── Tasks ───────────────────────────────────────────────────────
 
 
+class TaskLog(_Base):
+    id: str
+    task_id: str
+    event: str
+    detail: str = ""
+    created_at: str | None = None
+
+
 class Task(_Base):
     id: str
     workforce_id: str
@@ -246,6 +254,10 @@ class Task(_Base):
     error: str | None = None
     retry_count: int = 0
     metadata_json: dict[str, Any] = Field(default_factory=dict)
+    # Lifecycle events (submitted/started/waiting/completed/…). The backend
+    # returns these on GET /tasks/{id}; without this field the model silently
+    # dropped them, leaving SDK users no way to observe task progression.
+    logs: list[TaskLog] = Field(default_factory=list)
     created_at: str | None = None
     updated_at: str | None = None
     started_at: str | None = None
@@ -259,14 +271,6 @@ class TaskCreate(_Base):
     description: str = ""
     priority: str = "standard"
     metadata_json: dict[str, Any] | None = None
-
-
-class TaskLog(_Base):
-    id: str
-    task_id: str
-    event: str
-    detail: str = ""
-    created_at: str | None = None
 
 
 # ── Conversations & Messages ────────────────────────────────────
