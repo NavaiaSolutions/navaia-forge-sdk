@@ -64,9 +64,26 @@ class TasksResource(ResourceBase):
             Task, self._http.post(f"/workforces/{workforce_id}/tasks", body)
         )
 
-    def approve(self, task_id: str) -> Task:
-        """Approve a task that is waiting on human approval."""
-        return parse_model(Task, self._http.post(f"/tasks/{task_id}/approve"))
+    def approve(self, task_id: str, *, response: str | None = None) -> Task:
+        """Approve (or answer) a task that is waiting on human input.
+
+        The backend requires a JSON body on ``POST /tasks/{id}/approve`` — a
+        body-less request is rejected with **422** (``body Field required``),
+        which previously made this method fail for every waiting task.
+
+        For ``waiting_question`` / ``waiting_plan`` tasks, pass ``response``
+        to deliver the operator's answer: the backend stores it and the worker
+        resumes the agent with it as the pending answer. A bare approval
+        (``response=None``) sends ``{}`` — the task resumes, but the agent
+        receives no text and may re-ask its question.
+
+        Note: ``waiting_blocked`` tasks cannot be approved or answered (the
+        backend returns 400) — they must be re-created.
+        """
+        body: dict[str, Any] = {}
+        if response is not None:
+            body["response"] = response
+        return parse_model(Task, self._http.post(f"/tasks/{task_id}/approve", body))
 
     def reject(self, task_id: str, reason: str = "") -> Task:
         """Reject a task awaiting approval, with optional reason."""
