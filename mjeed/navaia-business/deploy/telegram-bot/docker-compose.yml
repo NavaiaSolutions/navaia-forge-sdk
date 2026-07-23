@@ -1,0 +1,39 @@
+# Always-on Telegram bot for the cloud workforce.
+# Run from THIS folder on any always-on host (free VM, home server, Koyeb, etc.):
+#   cp .env.example .env && nano .env      # fill the 5 secrets
+#   docker compose up -d --build
+#   docker compose logs -f                 # expect "Bot online. agents=[...]"
+#
+# IMPORTANT: only ONE process may poll a bot token. Stop the local laptop bot
+# (and any local navaia-forge-api that has TELEGRAM_* set) before starting this,
+# or Telegram returns 409 Conflict and neither works.
+services:
+  telegram-bot:
+    build:
+      context: ../..
+      dockerfile: deploy/telegram-bot/Dockerfile
+    image: navaia-tg-bot
+    container_name: navaia-tg-bot
+    restart: unless-stopped
+    # Default bridge + pinned public DNS. The laptop's ISP resolver FILTERS
+    # api.telegram.org (NXDOMAIN; 8.8.8.8/1.1.1.1 resolve it fine — verified
+    # 2026-07-14), and containers inherit the host resolver by default, which
+    # crash-loops the bot. The bot is standalone (no container-to-container DNS
+    # needed), so default bridge + explicit resolvers is the reliable setup.
+    network_mode: bridge
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    env_file: .env
+    environment:
+      # The 🚀 pipeline menu draws batches from the volume copy of the lead pool,
+      # so submitted_task markers survive image rebuilds.
+      LEADS_FILE: /app/data/leads_scraped_compact.json
+    volumes:
+      - tg-bot-data:/app/data
+
+volumes:
+  tg-bot-data:
+    # TEST vs LIVE is a runtime toggle from Telegram (🔀 Send mode / /mode) — no restart.
+    # Uncomment only to START in TEST mode (send-approvals routed to MY_PHONE):
+    # command: ["python", "scripts/telegram_workforce_bot.py", "--to-me"]

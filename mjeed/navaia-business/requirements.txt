@@ -1,0 +1,18 @@
+# Direct dependencies for the navaia-business-workforce executors.
+# Install into a local venv:
+#   py -m venv .venv
+#   .venv/Scripts/pip install -r requirements.txt
+#
+# Note: the DB-touching scripts (setup_db.py, approve_task.py, reset_task.py,
+# check_runtime.py, etc.) import `app.*` + sqlalchemy and are meant to run
+# INSIDE the navaia-forge-api container (see scripts/setup_db.py header),
+# not in this local venv — so sqlalchemy/asyncpg are intentionally omitted here.
+
+navaia-forge      # the published NavaiaForge SDK (imported as navaia_forge)
+navaia-code       # the `navaia` CLI used to run agents
+httpx             # CRM / GraphQL / Overpass HTTP calls in the lead scripts
+crawl4ai          # micro_scraper.py / agent_scraping_skill.py — Rashid's scraping skill.
+                  # Drives a real browser via Playwright, so after installing run:
+                  #   python -m playwright install chromium
+                  # Without the browser binaries the scraper fails at launch, and the
+                  # runtime that lacks it is exactly where leads get fabricated instead.

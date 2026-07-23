@@ -1,0 +1,26 @@
+# systemd unit — run the Telegram bot 24/7 on a Linux VM WITHOUT Docker.
+#
+# Setup on the VM:
+#   sudo mkdir -p /opt/navaia-tg-bot/scripts
+#   # copy scripts/nav_env.py + scripts/telegram_workforce_bot.py into /opt/navaia-tg-bot/scripts/
+#   python3 -m venv /opt/navaia-tg-bot/.venv
+#   /opt/navaia-tg-bot/.venv/bin/pip install "navaia-forge==0.2.3" "httpx>=0.27"
+#   # create /opt/navaia-tg-bot/.env from .env.example (chmod 600), fill the 5 secrets
+#   sudo cp navaia-tg-bot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now navaia-tg-bot
+#   journalctl -u navaia-tg-bot -f      # expect "Bot online. agents=[...]"
+[Unit]
+Description=NAVAIA Telegram <-> cloud workforce bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/navaia-tg-bot
+EnvironmentFile=/opt/navaia-tg-bot/.env
+ExecStart=/opt/navaia-tg-bot/.venv/bin/python scripts/telegram_workforce_bot.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

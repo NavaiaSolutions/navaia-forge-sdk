@@ -1,0 +1,45 @@
+#!/bin/sh
+# Gate on every push to the PUBLIC navaia-forge-sdk repo.
+# Enable with: git config core.hooksPath .githooks
+#
+# This repo is PUBLIC. Until 2026-07-20 it had no gate at all: every scanner lived in the
+# private workforce repo, while the repo that actually publishes had none. On that day three
+# files holding live credentials and named individuals' contact details were found sitting in
+# this working tree untracked AND unignored — one `git add -A` from being published.
+#
+# Bypass with `git push --no-verify` only when you have looked and you are sure.
+
+set -e
+export PYTHONIOENCODING=utf-8
+
+SCAN="mjeed/navaia-business/scripts/check_no_leaks.py"
+
+if [ ! -f "$SCAN" ]; then
+    echo "pre-push: BLOCKED — $SCAN is missing."
+    echo "The leak scanner is part of the payload; a push without it is unchecked."
+    exit 1
+fi
+
+echo "pre-push: scanning the public repo for credentials…"
+
+# Whole tracked tree, every push. A range scan cannot see a secret committed before the hook
+# existed — that is precisely how a live key survived unnoticed in the workforce repo.
+python "$SCAN" --all-tracked --credentials-only || {
+    echo ""
+    echo "PUSH BLOCKED — a credential is present in the tracked tree of a PUBLIC repo."
+    echo "Rotate it first, then remove it from the tree. Do not just delete the line:"
+    echo "the old blob stays reachable in history."
+    exit 1
+}
+
+# Files that must never be tracked here, checked by name as well as by content: the content
+# scan cannot help once a .csv of real contacts is committed under a harmless name.
+BAD=$(git ls-files | grep -E '(ONBOARDING_KEYS|_local_api_key|leads_enriched\.csv|prospects\.json|contacts\.json|company_size\.json|discover_state\.json|\.env$)' || true)
+if [ -n "$BAD" ]; then
+    echo ""
+    echo "PUSH BLOCKED — these are tracked and must never be in a public repo:"
+    echo "$BAD" | sed 's/^/   /'
+    exit 1
+fi
+
+echo "pre-push: checks passed."

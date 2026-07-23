@@ -11,6 +11,7 @@ build/
 .venv/
 venv/
 env/
+.python-version
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
@@ -44,3 +45,19 @@ Thumbs.db
 *.pem
 *.key
 credentials.json
+
+# ── Operator working files: credentials and personal data ──
+# These sat untracked-but-unignored in this PUBLIC repo (found 2026-07-20); a single
+# `git add -A` would have published live keys and named individuals' contact details.
+# Mirrors the forbidden-path list in the workforce repo's scripts/check_no_leaks.py.
+ONBOARDING_KEYS.md
+_local_api_key.txt
+_local_api_key*
+leads_enriched.csv
+prospects.json
+contacts.json
+company_size.json
+discover_state.json
+
+# migration working file with named-person PII
+leads_enriched_people.json
