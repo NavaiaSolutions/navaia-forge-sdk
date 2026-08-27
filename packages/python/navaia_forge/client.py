@@ -33,6 +33,7 @@ from .resources import (
     KnowledgeResource,
     MarketplaceResource,
     ObservabilityResource,
+    SchedulesResource,
     SyncResource,
     TasksResource,
     TemplatesResource,
@@ -62,6 +63,7 @@ class NavaiaForgeClient:
         self.workforces = WorkforcesResource(self._http)
         self.agents = AgentsResource(self._http)
         self.tasks = TasksResource(self._http)
+        self.schedules = SchedulesResource(self._http)
         self.conversations = ConversationsResource(self._http)
         self.knowledge = KnowledgeResource(self._http)
         self.observability = ObservabilityResource(self._http)

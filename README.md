@@ -94,13 +94,19 @@ tester = client.agents.create(
     model_provider="anthropic", model_name="sonnet",
 )
 
-# Wire reviewer → tester so approved diffs flow downstream automatically.
+# Wire reviewer → tester. An edge fires on a CONDITION: left unset it defaults
+# to "mention", firing only when the Reviewer's output names "Tester" — right
+# for delegation, so ask for "always" when you want an unconditional hand-off.
 client.workforces.edges.create(
     workforce_id=wf.id,
     source_agent_id=reviewer.id,
     target_agent_id=tester.id,
+    condition_expr="always",
 )
 ```
+
+Edges delegate one hop and do not join. Before you build a graph, read
+[Routing and scheduling](./docs/ROUTING_AND_SCHEDULING.md).
 
 ### Give the team shared knowledge
 
@@ -117,6 +123,23 @@ task = client.tasks.create(workforce_id=wf.id, title="Review PR #482 and add tes
 final = client.tasks.wait_for_completion(task.id)  # blocks with smart polling
 print(final.status, final.result)
 ```
+
+### Run an agent on a schedule
+
+```python
+schedule = client.schedules.create(
+    workforce_id=wf.id,
+    agent_id=reviewer.id,
+    title="Nightly triage",
+    cron_expr="0 3 * * *",
+    description="Triage everything opened since yesterday.",
+    timezone="UTC",
+)
+```
+
+The backend submits a task for it whenever it comes due. `pause`, `resume`,
+`update` and `delete` do what they say — see
+[Routing and scheduling](./docs/ROUTING_AND_SCHEDULING.md).
 
 ### Watch it happen in real time
 
@@ -184,6 +207,7 @@ Every namespace below is available on `client.*`.
 | **tasks** | Submit, approve, reject, `wait_for_completion` | Hand work to the team and get results — sync or async |
 | **conversations** | Open chats with workforces, send messages targeted at specific agents | Build chat UIs, support bots, interactive assistants |
 | **knowledge** | Knowledge bases, semantic search | Ground agents in your own data via RAG |
+| **schedules** | Cron expressions bound to an agent | Recurring work, without a machine of your own to keep running |
 | **templates** | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice; instantiate from a blueprint |
 | **marketplace** | Browse published workforces (`list`, `get`) and `install` them into your backend | Run teams others have published — not just your own |
 | **integrations** | Manage plugin integrations: list installed, browse `list_plugins`, CRUD | Connect Slack, GitHub, Linear, and other third-party services |
@@ -267,6 +291,7 @@ Runnable end-to-end examples in [`examples/`](./examples/):
 ## Documentation
 
 - [Setup Guide](./SETUP.md) — backend, SDK install, framework interop (LangGraph, LangChain, CrewAI, …)
+- [Routing and scheduling](./docs/ROUTING_AND_SCHEDULING.md) — how work moves between agents, and how to run one on a cron
 - API Reference — coming soon
 - Platform Guide — coming soon
 - [Contributing](./CONTRIBUTING.md)

@@ -19,12 +19,12 @@ workforce = client.workforces.create(
     description="Research, write, and review content automatically.",
     runtime_mode="claude_max",
 )
-print(f"Workforce: {workforce['id']}")
+print(f"Workforce: {workforce.id}")
 
 # ── 2. Add specialized agents ──────────────────────────────
 
 researcher = client.agents.create(
-    workforce_id=workforce["id"],
+    workforce_id=workforce.id,
     name="Researcher",
     role="research",
     instructions=(
@@ -39,7 +39,7 @@ researcher = client.agents.create(
 )
 
 writer = client.agents.create(
-    workforce_id=workforce["id"],
+    workforce_id=workforce.id,
     name="Writer",
     role="writing",
     instructions=(
@@ -53,7 +53,7 @@ writer = client.agents.create(
 )
 
 reviewer = client.agents.create(
-    workforce_id=workforce["id"],
+    workforce_id=workforce.id,
     name="Reviewer",
     role="review",
     instructions=(
@@ -66,49 +66,61 @@ reviewer = client.agents.create(
     position_y=200,
 )
 
-print(f"Agents created: {researcher['name']}, {writer['name']}, {reviewer['name']}")
+print(f"Agents created: {researcher.name}, {writer.name}, {reviewer.name}")
 
 # ── 3. Connect agents with edges ───────────────────────────
-# Edges define the flow: Researcher -> Writer -> Reviewer
+# Edges are their own resource. They are NOT part of `config_json` — writing
+# them there creates nothing.
 
-workforce_full = client.workforces.get_full(workforce["id"])
-print(f"Workforce has {len(workforce_full.get('agents', []))} agents")
-
-# NOTE: Edge creation is typically done via the workforce update API
-# or through the visual canvas in the NavaiaForge UI.
-
-client.workforces.update(
-    workforce["id"],
-    config_json={
-        "edges": [
-            {
-                "source_agent_id": researcher["id"],
-                "target_agent_id": writer["id"],
-                "approval_mode": "auto_run",
-                "label": "Research complete",
-            },
-            {
-                "source_agent_id": writer["id"],
-                "target_agent_id": reviewer["id"],
-                "approval_mode": "auto_run",
-                "label": "Draft ready",
-            },
-        ],
-    },
+client.workforces.edges.create(
+    workforce_id=workforce.id,
+    source_agent_id=researcher.id,
+    target_agent_id=writer.id,
+    approval_mode="auto_run",
+    label="Research complete",
+    condition_expr="always",
+)
+client.workforces.edges.create(
+    workforce_id=workforce.id,
+    source_agent_id=writer.id,
+    target_agent_id=reviewer.id,
+    approval_mode="auto_run",
+    label="Draft ready",
+    condition_expr="always",
 )
 
-# ── 4. Submit a task to kick off the pipeline ──────────────
+# `condition_expr` is set deliberately. Left unset it defaults to "mention",
+# which fires an edge only when the upstream output contains the target agent's
+# NAME — right for a supervisor delegating by name, wrong for a hand-off.
 
-task = client.tasks.create(
-    workforce_id=workforce["id"],
-    title="Write an article about quantum computing breakthroughs",
-    description=(
-        "Research the latest quantum computing advances in 2025, "
-        "write a 1500-word article, and review it for publication."
-    ),
-    agent_id=researcher["id"],
-    priority="high",
-)
+workforce_full = client.workforces.get_full(workforce.id)
+print(f"Workforce has {len(workforce_full.agents)} agents "
+      f"and {len(workforce_full.edges)} edges")
 
-print(f"Pipeline started — task {task['id']}")
-print(f"Track progress at: https://app.navaia.com/workforces/{workforce['id']}")
+# ── 4. Run the three stages ────────────────────────────────
+#
+# Edges delegate ONE hop: a task created by routing does not route onward, so
+# submitting to the Researcher runs the Writer and stops — the Reviewer is
+# never reached. Sequence the stages yourself when you need all three.
+# See docs/ROUTING_AND_SCHEDULING.md.
+
+def run_stage(agent_id: str, title: str, description: str) -> str:
+    task = client.tasks.create(
+        workforce_id=workforce.id,
+        title=title,
+        description=description,
+        agent_id=agent_id,
+        priority="high",
+    )
+    print(f"  {title} — task {task.id}")
+    done = client.tasks.wait_for_completion(task.id, timeout=1800)
+    if done.status != "done":
+        raise RuntimeError(f"{title} ended {done.status}: {done.error}")
+    return done.result or ""
+
+topic = "the latest quantum computing advances"
+notes = run_stage(researcher.id, "Research", f"Compile detailed notes on {topic}.")
+draft = run_stage(writer.id, "Write", f"Write a 1500-word article from these notes:\n\n{notes}")
+review = run_stage(reviewer.id, "Review", f"Review this article for publication:\n\n{draft}")
+
+print(f"\nDone. Review:\n{review[:500]}")

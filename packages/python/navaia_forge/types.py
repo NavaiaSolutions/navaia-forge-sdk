@@ -252,6 +252,34 @@ class Task(_Base):
     completed_at: str | None = None
 
 
+# ── Schedules ───────────────────────────────────────────────────
+
+
+class Schedule(_Base):
+    """A recurring task definition: a cron expression bound to one agent.
+
+    The backend's scheduler loop submits a task for every schedule whose
+    ``next_run_at`` has passed, with ``source="scheduler"`` and the schedule's
+    id under ``metadata_json``. ``next_run_at`` is computed by the server from
+    ``cron_expr`` and ``timezone``; it is not settable.
+    """
+
+    id: str
+    workforce_id: str
+    agent_id: str
+    title: str
+    description: str = ""
+    cron_expr: str
+    timezone: str = "Asia/Riyadh"
+    enabled: bool = True
+    last_run_at: str | None = None
+    next_run_at: str | None = None
+    priority: str = "standard"
+    metadata_json: dict[str, Any] = Field(default_factory=dict)
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
 class TaskCreate(_Base):
     workforce_id: str
     agent_id: str | None = None
