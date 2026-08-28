@@ -87,7 +87,25 @@ const final = await nf.tasks.waitForCompletion(task.id);
 console.log(final.status, final.result);
 ```
 
-All resource methods return typed results. Errors throw `NavaiaForgeError` (or a subclass: `NotFoundError`, `RateLimitError`, `AuthenticationError`, `PermissionError`, `TimeoutError`).
+All resource methods return typed results. Errors throw `NavaiaForgeError` (or a subclass: `NotFoundError`, `RateLimitError`, `AuthenticationError`, `PermissionError`, `TaskNotRetryable`, `TimeoutError`).
+
+### Retrying a failed task
+
+`nf.tasks.retry(taskId)` resets a `failed` or `cancelled` task back to `pending` and increments its `retry_count`. Only those two states are retryable — retrying a running or already-completed task throws `TaskNotRetryable`:
+
+```ts
+import { TaskNotRetryable } from "navaia-forge";
+
+try {
+  const task = await nf.tasks.retry(task.id); // -> status "pending", retry_count += 1
+} catch (e) {
+  if (e instanceof TaskNotRetryable) {
+    // still running or already succeeded — nothing to retry
+  }
+}
+```
+
+> Requires a backend that exposes `POST /tasks/{id}/retry` (see the backend version note in the local-stack setup).
 
 ## Real-time events
 
@@ -116,6 +134,7 @@ ws.connect();
 | `nf.workforces` | CRUD; nested `edges` sub-resource | Define the team and how work flows through it |
 | `nf.agents` | CRUD; `listFeatured`, `clone`, `export`; attach/detach to workforces | Compose specialists with their own models and instructions |
 | `nf.tasks` | `create`, `approve`, `reject`, `retry`, `logs`, `waitForCompletion` | Hand work to the team, sync or async |
+| `nf.pipelines` | `list`, `get`, `create`, `update`, `delete`, `run`, `listRuns`, `reportRun` | Define and trigger reusable multi-step workflows |
 | `nf.conversations` | Open chats, send messages targeted at agents | Build chat UIs / interactive assistants |
 | `nf.knowledge` | Knowledge bases, document upload, semantic `search`, `featured`, download | Ground agents in your data via RAG |
 | `nf.templates` | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice |

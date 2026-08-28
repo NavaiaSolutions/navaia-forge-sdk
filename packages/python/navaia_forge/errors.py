@@ -85,6 +85,23 @@ class SyncConflictError(NavaiaForgeError):
         self.remote_bundle = remote_bundle
 
 
+class TaskNotRetryable(NavaiaForgeError):
+    """Raised when :meth:`TasksResource.retry` targets a task that is not in a
+    retryable state (HTTP 409).
+
+    Only ``failed`` or ``cancelled`` tasks can be retried; a running, pending,
+    or already-completed task raises this instead of a bare 409::
+
+        try:
+            client.tasks.retry(task.id)
+        except TaskNotRetryable:
+            ...  # still running or already succeeded — nothing to retry
+    """
+
+    def __init__(self, message: str = "Task is not in a retryable state") -> None:
+        super().__init__(409, message)
+
+
 class TimeoutError(NavaiaForgeError):
     """Raised when a polling operation exceeds its timeout."""
 

@@ -11,11 +11,17 @@
 
 services:
   navaia-forge-api:
+    # Pin NAVAIA_BACKEND_VERSION in .env for reproducible runs. Task retry
+    # (SDK tasks.retry() -> POST /tasks/{id}/retry) needs a backend build that
+    # ships the route (>= 0.2.4).
     image: ghcr.io/navaiasolutions/navaia-forge-backend:${NAVAIA_BACKEND_VERSION:-latest}
     container_name: navaia-forge-api
     pull_policy: always
+    # Bound to loopback: the API is reachable from this machine (where the SDK
+    # runs) but is NOT published to the local network. Override API_HOST=0.0.0.0
+    # only if you deliberately need off-box access.
     ports:
-      - "${API_PORT:-8001}:8000"
+      - "${API_HOST:-127.0.0.1}:${API_PORT:-8001}:8000"
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-navaia_forge}:${POSTGRES_PASSWORD:-navaia_forge}@postgres:5432/${POSTGRES_DB:-navaia_forge}

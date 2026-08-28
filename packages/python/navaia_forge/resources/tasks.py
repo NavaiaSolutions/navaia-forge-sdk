@@ -5,6 +5,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from ..errors import NavaiaForgeError
+from ..errors import TaskNotRetryable
 from ..errors import TimeoutError as NfTimeoutError
 from ..types import Task, TaskStatus
 from ._base import ResourceBase, parse_list, parse_model
@@ -73,6 +75,24 @@ class TasksResource(ResourceBase):
         return parse_model(
             Task, self._http.post(f"/tasks/{task_id}/reject", {"reason": reason})
         )
+
+    def retry(self, task_id: str) -> Task:
+        """Retry a failed or cancelled task.
+
+        Resets the task to ``pending`` and increments its ``retry_count``. Only
+        tasks in a ``failed`` or ``cancelled`` state are retryable — the platform
+        returns 409 otherwise, which this method surfaces as
+        :class:`TaskNotRetryable`.
+
+        Raises:
+            TaskNotRetryable: If the task is not in a retryable state (HTTP 409).
+        """
+        try:
+            return parse_model(Task, self._http.post(f"/tasks/{task_id}/retry"))
+        except NavaiaForgeError as err:
+            if err.status_code == 409:
+                raise TaskNotRetryable(err.message) from err
+            raise
 
     def wait_for_completion(
         self,

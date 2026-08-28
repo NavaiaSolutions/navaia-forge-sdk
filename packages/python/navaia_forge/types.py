@@ -269,6 +269,39 @@ class TaskLog(_Base):
     created_at: str | None = None
 
 
+# ── Pipelines ───────────────────────────────────────────────────
+
+
+class Pipeline(_Base):
+    """A pipeline — an ordered, reusable workflow of steps the platform runs.
+
+    Mirrors the backend's ``PipelineResponse``. Permissive by design: unknown
+    fields are ignored so backend additions don't break older clients.
+    """
+
+    id: str
+    workforce_id: str | None = None
+    name: str = ""
+    description: str = ""
+    config_json: dict[str, Any] = Field(default_factory=dict)
+    status: str = ""
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+class PipelineRun(_Base):
+    """A single execution of a :class:`Pipeline`. Mirrors ``PipelineRunResponse``."""
+
+    id: str
+    pipeline_id: str
+    status: str = ""
+    result: str | None = None
+    error: str | None = None
+    created_at: str | None = None
+    started_at: str | None = None
+    completed_at: str | None = None
+
+
 # ── Conversations & Messages ────────────────────────────────────
 
 

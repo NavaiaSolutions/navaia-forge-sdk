@@ -28,6 +28,7 @@ import { IntegrationResource } from "./resources/integrations.js";
 import { KnowledgeResource } from "./resources/knowledge.js";
 import { MarketplaceResource } from "./resources/marketplace.js";
 import { ObservabilityResource } from "./resources/observability.js";
+import { PipelineResource } from "./resources/pipelines.js";
 import { SetupResource } from "./resources/setup.js";
 import { SyncResource } from "./resources/sync.js";
 import { TaskResource } from "./resources/tasks.js";
@@ -57,6 +58,9 @@ export class NavaiaForge {
 
   /** Task lifecycle — create, approve, reject, retry, poll. */
   readonly tasks: TaskResource;
+
+  /** Pipeline CRUD, run triggering, and run history. */
+  readonly pipelines: PipelineResource;
 
   /** Conversation and chat message management. */
   readonly conversations: ConversationResource;
@@ -101,6 +105,7 @@ export class NavaiaForge {
     this.workforces = new WorkforceResource(this.config);
     this.agents = new AgentResource(this.config);
     this.tasks = new TaskResource(this.config);
+    this.pipelines = new PipelineResource(this.config);
     this.conversations = new ConversationResource(this.config);
     this.knowledge = new KnowledgeResource(this.config);
     this.observability = new ObservabilityResource(this.config);

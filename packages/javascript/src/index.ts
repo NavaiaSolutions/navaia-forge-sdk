@@ -25,6 +25,7 @@ export {
   RateLimitError,
   ServerError,
   SyncConflictError,
+  TaskNotRetryable,
   TimeoutError,
 } from "./errors.js";
 
@@ -58,6 +59,12 @@ export type {
   TaskCreate,
   TaskLog,
   WaitForCompletionOptions,
+  // Pipelines
+  Pipeline,
+  PipelineCreate,
+  PipelineUpdate,
+  PipelineRun,
+  PipelineRunReport,
   // Conversations
   Conversation,
   Message,
@@ -144,6 +151,7 @@ export type {
 export { WorkforceResource, EdgesResource } from "./resources/workforces.js";
 export { AgentResource } from "./resources/agents.js";
 export { TaskResource } from "./resources/tasks.js";
+export { PipelineResource } from "./resources/pipelines.js";
 export { ConversationResource } from "./resources/conversations.js";
 export { KnowledgeResource } from "./resources/knowledge.js";
 export { ObservabilityResource } from "./resources/observability.js";

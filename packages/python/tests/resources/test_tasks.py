@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from navaia_forge import NavaiaForgeError, Task
+from navaia_forge import NavaiaForgeError, Task, TaskNotRetryable
 
 
 @pytest.fixture
@@ -131,6 +131,37 @@ def test_reject_task(httpx_mock, client, base_url, task_payload) -> None:
     task = client.tasks.reject("tk_1", reason="not needed")
     assert task.status == "cancelled"
     assert task.error == "not needed"
+
+
+@pytest.mark.integration
+def test_retry_task_resets_to_pending(httpx_mock, client, base_url, task_payload) -> None:
+    # A previously failed task, retried, comes back pending with retry_count bumped.
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks/tk_1/retry",
+        method="POST",
+        json={**task_payload, "status": "pending", "retry_count": 1, "error": None},
+    )
+    task = client.tasks.retry("tk_1")
+    assert isinstance(task, Task)
+    assert task.status == "pending"
+    assert task.retry_count == 1
+
+
+@pytest.mark.integration
+def test_retry_non_retryable_task_raises_typed_error(
+    httpx_mock, client, base_url
+) -> None:
+    # The platform 409s when the task is still running / already succeeded.
+    httpx_mock.add_response(
+        url=f"{base_url}/api/v1/tasks/tk_1/retry",
+        method="POST",
+        status_code=409,
+        json={"detail": "Task is running and cannot be retried"},
+    )
+    with pytest.raises(TaskNotRetryable) as exc_info:
+        client.tasks.retry("tk_1")
+    assert exc_info.value.status_code == 409
+    assert "running" in str(exc_info.value)
 
 
 @pytest.mark.integration
