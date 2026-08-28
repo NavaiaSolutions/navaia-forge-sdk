@@ -264,6 +264,63 @@ export interface WaitForCompletionOptions {
   readonly timeout?: number;
 }
 
+// ── Pipelines ───────────────────────────────────────────────
+
+/**
+ * A pipeline — an ordered, reusable workflow of steps the platform can run.
+ *
+ * Fields mirror the backend's `PipelineResponse`. The model is intentionally
+ * permissive: unknown fields are ignored so backend additions don't break
+ * older clients.
+ */
+export interface Pipeline {
+  readonly id: string;
+  readonly workforce_id: string | null;
+  readonly name: string;
+  readonly description: string;
+  readonly config_json: Record<string, unknown>;
+  readonly status: string;
+  readonly created_at: string | null;
+  readonly updated_at: string | null;
+}
+
+export interface PipelineCreate {
+  readonly name: string;
+  readonly workforce_id?: string;
+  readonly description?: string;
+  readonly config_json?: Record<string, unknown>;
+}
+
+export interface PipelineUpdate {
+  readonly name?: string;
+  readonly description?: string;
+  readonly config_json?: Record<string, unknown>;
+  readonly status?: string;
+}
+
+/** A single execution of a {@link Pipeline}. Mirrors `PipelineRunResponse`. */
+export interface PipelineRun {
+  readonly id: string;
+  readonly pipeline_id: string;
+  readonly status: string;
+  readonly result: string | null;
+  readonly error: string | null;
+  readonly created_at: string | null;
+  readonly started_at: string | null;
+  readonly completed_at: string | null;
+}
+
+/**
+ * Body for reporting an externally-executed run back to the platform
+ * (`POST /pipelines/{id}/runs` — runner ingest).
+ */
+export interface PipelineRunReport {
+  readonly status: string;
+  readonly result?: string | null;
+  readonly error?: string | null;
+  readonly metadata_json?: Record<string, unknown>;
+}
+
 // ── Conversations ───────────────────────────────────────────
 
 export interface Conversation {

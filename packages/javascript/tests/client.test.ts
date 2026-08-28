@@ -8,6 +8,7 @@ describe("NavaiaForge client", () => {
     expect(nf.workforces.edges).toBeDefined();
     expect(nf.agents).toBeDefined();
     expect(nf.tasks).toBeDefined();
+    expect(nf.pipelines).toBeDefined();
     expect(nf.conversations).toBeDefined();
     expect(nf.knowledge).toBeDefined();
     expect(nf.observability).toBeDefined();

@@ -70,7 +70,22 @@ final = client.tasks.wait_for_completion(task.id)
 print(final.status, final.result)
 ```
 
-All resource methods return typed [Pydantic v2](https://docs.pydantic.dev/) models. Errors raise `navaia_forge.NavaiaForgeError` (or a subclass: `NotFoundError`, `RateLimitError`, `ValidationError`, `AuthenticationError`, `PermissionError`, `ServerError`, `TimeoutError`).
+All resource methods return typed [Pydantic v2](https://docs.pydantic.dev/) models. Errors raise `navaia_forge.NavaiaForgeError` (or a subclass: `NotFoundError`, `RateLimitError`, `ValidationError`, `AuthenticationError`, `PermissionError`, `ServerError`, `TaskNotRetryable`, `TimeoutError`).
+
+### Retrying a failed task
+
+`client.tasks.retry(task_id)` resets a `failed` or `cancelled` task back to `pending` and increments its `retry_count`. Only those two states are retryable — retrying a running or already-completed task raises `TaskNotRetryable`:
+
+```python
+from navaia_forge import TaskNotRetryable
+
+try:
+    task = client.tasks.retry(task.id)   # -> status="pending", retry_count += 1
+except TaskNotRetryable:
+    ...  # still running or already succeeded — nothing to retry
+```
+
+> Requires a backend that exposes `POST /tasks/{id}/retry` (see the backend version note in the local-stack setup).
 
 ## Real-time events
 
@@ -94,6 +109,7 @@ Channels: `task:status`, `agent:status`, `chat:message`, `system:*`.
 | `client.workforces` | CRUD; manage edges; link tools / knowledge bases | Define the team and how work flows through it |
 | `client.agents` | CRUD; `list_featured`, `clone`, `export`; attach/detach to workforces | Compose specialists with their own models and instructions |
 | `client.tasks` | `create`, `approve`, `reject`, `retry`, logs, `wait_for_completion` | Hand work to the team, sync or async |
+| `client.pipelines` | `list`, `get`, `create`, `update`, `delete`, `run`, `list_runs`, `report_run` | Define and trigger reusable multi-step workflows |
 | `client.conversations` | Open chats, send messages targeted at agents | Build chat UIs / interactive assistants |
 | `client.knowledge` | Knowledge bases, document upload, semantic `search`, `featured`, `download` | Ground agents in your data via RAG |
 | `client.templates` | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice |

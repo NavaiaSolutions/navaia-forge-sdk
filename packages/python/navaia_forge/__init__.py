@@ -24,6 +24,7 @@ from .errors import (
     RateLimitError,
     ServerError,
     SyncConflictError,
+    TaskNotRetryable,
     TimeoutError,
     ValidationError,
 )
@@ -52,6 +53,8 @@ from .types import (
     MetricsSummary,
     ModelCostBreakdown,
     PaginatedResponse,
+    Pipeline,
+    PipelineRun,
     RLEvaluation,
     SearchResponse,
     SearchResult,
@@ -81,7 +84,7 @@ from .types import (
 )
 from .websocket import NavaiaForgeWs
 
-__version__ = "0.2.3"
+__version__ = "0.2.4"
 
 __all__ = [
     "Agent",
@@ -115,6 +118,8 @@ __all__ = [
     "NotFoundError",
     "PaginatedResponse",
     "PermissionError",
+    "Pipeline",
+    "PipelineRun",
     "RLEvaluation",
     "RateLimitError",
     "SearchResponse",
@@ -126,6 +131,7 @@ __all__ = [
     "Task",
     "TaskCreate",
     "TaskLog",
+    "TaskNotRetryable",
     "Template",
     "TemplateInstantiateResult",
     "TimeoutError",

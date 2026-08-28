@@ -95,6 +95,30 @@ export class SyncConflictError<TBundle = unknown> extends NavaiaForgeError {
   }
 }
 
+/**
+ * Thrown when {@link TaskResource.retry} targets a task that is not in a
+ * retryable state (409).
+ *
+ * Only `failed` or `cancelled` tasks can be retried. A running, pending, or
+ * already-completed task yields this error instead of a bare 409:
+ *
+ * ```ts
+ * try {
+ *   await nf.tasks.retry(task.id);
+ * } catch (e) {
+ *   if (e instanceof TaskNotRetryable) {
+ *     // task is still running or already succeeded — nothing to retry
+ *   }
+ * }
+ * ```
+ */
+export class TaskNotRetryable extends NavaiaForgeError {
+  constructor(message = "Task is not in a retryable state") {
+    super(409, message);
+    this.name = "TaskNotRetryable";
+  }
+}
+
 /** Thrown when a polling operation exceeds its timeout. */
 export class TimeoutError extends NavaiaForgeError {
   constructor(message: string) {

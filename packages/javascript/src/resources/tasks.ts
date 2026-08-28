@@ -2,7 +2,7 @@
  * Task resource — CRUD, approval/rejection, retry, and polling.
  */
 
-import { TimeoutError } from "../errors.js";
+import { NavaiaForgeError, TaskNotRetryable, TimeoutError } from "../errors.js";
 import { get, getList, post } from "../http.js";
 import type {
   ResolvedConfig,
@@ -80,9 +80,25 @@ export class TaskResource {
     return post<Task>(this.config, `/tasks/${taskId}/reject`, { reason });
   }
 
-  /** Retry a failed task. */
-  retry(taskId: string): Promise<Task> {
-    return post<Task>(this.config, `/tasks/${taskId}/retry`);
+  /**
+   * Retry a failed or cancelled task.
+   *
+   * Resets the task to `pending` and increments its `retry_count`. Only tasks
+   * in a `failed` or `cancelled` state are retryable — the platform returns
+   * 409 otherwise, which this method surfaces as {@link TaskNotRetryable}.
+   *
+   * @param taskId - The task to retry.
+   * @throws {@link TaskNotRetryable} if the task is not in a retryable state.
+   */
+  async retry(taskId: string): Promise<Task> {
+    try {
+      return await post<Task>(this.config, `/tasks/${taskId}/retry`);
+    } catch (err) {
+      if (err instanceof NavaiaForgeError && err.statusCode === 409) {
+        throw new TaskNotRetryable(err.message);
+      }
+      throw err;
+    }
   }
 
   /** Get the event log for a task. */

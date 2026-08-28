@@ -11,6 +11,8 @@
 
 services:
   navaia-forge-api:
+    # Pin NAVAIA_BACKEND_VERSION in .env for reproducible runs. Task retry
+    # (SDK tasks.retry() -> POST /tasks/{id}/retry) needs a backend >= 0.2.4.
     image: ghcr.io/navaiasolutions/navaia-forge-backend:${NAVAIA_BACKEND_VERSION:-latest}
     container_name: navaia-forge-api
     pull_policy: always
