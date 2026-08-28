@@ -369,6 +369,51 @@ class SearchResponse(_Base):
     total: int = 0
 
 
+# ── Tools ───────────────────────────────────────────────────────
+
+
+class Tool(_Base):
+    """A tool in the caller's library. Mirrors the backend ``ToolResponse``."""
+
+    id: str
+    owner_id: str | None = None
+    name: str
+    description: str = ""
+    kind: str = ""
+    icon: str | None = None
+    integration_id: str | None = None
+    config_json: dict[str, Any] = Field(default_factory=dict)
+    is_featured: bool = False
+    is_template: bool = False
+    created_at: str | None = None
+    updated_at: str | None = None
+
+
+class WorkforceToolLink(_Base):
+    """A tool attached to a workforce, with per-workforce config overrides."""
+
+    tool: Tool
+    override_json: dict[str, Any] = Field(default_factory=dict)
+    added_at: str | None = None
+
+
+# ── Setup ───────────────────────────────────────────────────────
+
+
+class SetupOptions(_Base):
+    """Which onboarding paths are enabled in this deployment."""
+
+    navaia_cloud_enabled: bool = False
+    claude_cli_enabled: bool = False
+
+
+class SetupValidateResult(_Base):
+    """Result of a setup connectivity check (``status`` is healthy/unhealthy)."""
+
+    status: str = ""
+    message: str = ""
+
+
 # ── Integrations ────────────────────────────────────────────────
 
 

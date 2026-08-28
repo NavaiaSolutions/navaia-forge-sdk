@@ -142,3 +142,31 @@ Mirror the REST surface, following the existing `tasks` resource as the template
 
 ⚠️ Ship after confirming the platform response shapes (`app/pipelines/schemas.py`) so the SDK types
 match exactly.
+
+---
+
+# N2 — Python missing `tools` + `setup` resources (README/parity gap)
+
+**Status:** ✅ Fixed in **0.2.6** (Python). **Source:** README accuracy audit (2026-08-28).
+
+## What was wrong
+The Python README advertised `client.tools` and `client.setup`, but the Python SDK had **neither
+resource** — no `resources/tools.py` / `resources/setup.py`, and the client never registered them.
+So `client.tools` / `client.setup` raised **`AttributeError`** (same bug class as `tasks.retry()`).
+JS had both (`nf.tools`, `nf.setup`). Separately, **both** READMEs' resource tables omitted
+`marketplace` and `sync`, which *do* exist in both clients (undocumented, opposite direction).
+
+## What was fixed (0.2.6)
+- **New Python resources** `client.tools` (list, list_featured, get, create, update, delete,
+  list_workforce_tools, attach_to_workforce, detach_from_workforce) and `client.setup`
+  (options, validate, complete) — mirroring the JS resources. Registered on the client.
+- **New Python types** `Tool`, `WorkforceToolLink`, `SetupOptions`, `SetupValidateResult`
+  (mirroring `types.ts`), exported from the package.
+- **README accuracy (both SDKs):** added the missing `marketplace` and `sync` rows so the resource
+  tables now list every namespace the client actually exposes. Python `tools`/`setup` rows are now
+  backed by real code.
+- **Tests:** Python `test_tools.py` + `test_setup.py`. Python client now exposes all 14 namespaces,
+  matching JS.
+
+> Same "confirm field shapes vs backend schema" caveat applies to `Tool` / `SetupOptions` /
+> `SetupValidateResult` — mirrored from `types.ts`, permissive (unknown fields ignored).

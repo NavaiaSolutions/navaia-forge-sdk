@@ -138,11 +138,13 @@ ws.connect();
 | `nf.conversations` | Open chats, send messages targeted at agents | Build chat UIs / interactive assistants |
 | `nf.knowledge` | Knowledge bases, document upload, semantic `search`, `featured`, download | Ground agents in your data via RAG |
 | `nf.templates` | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice |
+| `nf.marketplace` | `list`, `get`, `install` | Browse and install published workforces |
 | `nf.tools` | Full CRUD, `listFeatured`, attach/detach to workforces | Give the team hands (HTTP, MCP, code-exec, custom) |
 | `nf.integrations` | `list`, `listPlugins`, CRUD | Connect Slack / GitHub / Linear / other plugins |
 | `nf.setup` | `options`, `validate`, `complete` | First-run onboarding / provider configuration |
 | `nf.observability` | `summary`, `cost`, `agentMetrics`, `agentEvaluations`, `logTokenUsage` | See what the team is doing and what it costs |
 | `nf.auth` | `me`, `register`, `login`, `refresh`, `createKey`, `validate`, OAuth URL helpers | Build your own UI on top of NavaiaForge |
+| `nf.sync` | `exportBundle`, `importBundle`, `push`, `pull` | Two-way local ↔ cloud workforce sync |
 
 ## LangGraph integration
 

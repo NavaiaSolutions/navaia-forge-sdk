@@ -113,11 +113,13 @@ Channels: `task:status`, `agent:status`, `chat:message`, `system:*`.
 | `client.conversations` | Open chats, send messages targeted at agents | Build chat UIs / interactive assistants |
 | `client.knowledge` | Knowledge bases, document upload, semantic `search`, `featured`, `download` | Ground agents in your data via RAG |
 | `client.templates` | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice |
-| `client.tools` | Full CRUD, `featured`, attach/detach to workforces | Give the team hands (HTTP, MCP, code-exec, custom) |
+| `client.marketplace` | `list`, `get`, `install` | Browse and install published workforces |
+| `client.tools` | Full CRUD, `list_featured`, attach/detach to workforces | Give the team hands (HTTP, MCP, code-exec, custom) |
 | `client.integrations` | `list`, `list_plugins`, CRUD | Connect Slack / GitHub / Linear / other plugins |
 | `client.setup` | `options`, `validate`, `complete` | First-run onboarding / provider configuration |
 | `client.observability` | `summary`, `cost`, `agent_metrics`, `agent_evaluations`, `log_token_usage` | See what the team is doing and what it costs |
 | `client.auth` | `me`, `register`, `login`, `refresh`, `create_key`, `validate`, OAuth URL helpers | Build your own UI on top of NavaiaForge |
+| `client.sync` | `export_bundle`, `import_bundle`, `push`, `pull` (+ `export_to_file` / `import_from_file`) | Two-way local ↔ cloud workforce sync |
 
 ## LangGraph integration
 
