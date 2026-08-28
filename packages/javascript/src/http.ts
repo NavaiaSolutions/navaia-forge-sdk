@@ -151,14 +151,31 @@ export function get<T>(
   return request<T>(config, "GET", path, { params });
 }
 
-/** GET that unwraps a paginated `{ items, total }` envelope. */
+/**
+ * GET a list endpoint, tolerant of either response shape.
+ *
+ * Unwraps a paginated `{ items, total }` envelope, but also accepts a bare
+ * `[...]` array (some routes return one directly). Mirrors the Python
+ * transport's `get_list`, so every resource gets this robustness for free
+ * rather than re-implementing it. Returns `[]` for any other shape.
+ */
 export async function getList<T>(
   config: ResolvedConfig,
   path: string,
   params?: Record<string, string>,
 ): Promise<T[]> {
-  const result = await get<PaginatedResponse<T>>(config, path, params);
-  return result.items;
+  const result = await get<T[] | PaginatedResponse<T> | null>(
+    config,
+    path,
+    params,
+  );
+  if (Array.isArray(result)) {
+    return result;
+  }
+  if (result && Array.isArray((result as PaginatedResponse<T>).items)) {
+    return (result as PaginatedResponse<T>).items;
+  }
+  return [];
 }
 
 /** Convenience POST. */

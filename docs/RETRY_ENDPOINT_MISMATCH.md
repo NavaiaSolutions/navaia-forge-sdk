@@ -1,9 +1,9 @@
 # SDK ⇄ Platform Mismatch — `tasks.retry()` hits a non-existent route
 
 **Date:** 2026-08-27 · Source: NavaiaForge `PLATFORM-BUG-REPORT-2026-08-25` (§7)
-**Status:** ✅ SDK side fixed in **0.2.4** (JS + Python) — ⏳ still gated on the platform route.
+**Status:** ✅ SDK side fixed in **0.2.5** (JS + Python) — ⏳ still gated on the platform route.
 
-## Update (2026-08-28) — SDK changes shipped in 0.2.4
+## Update (2026-08-28) — SDK changes shipped in 0.2.5
 - **Python parity gap closed:** `client.tasks.retry()` did not exist at all (the README advertised
   it but the method was missing → `AttributeError`). It is now implemented in
   `packages/python/navaia_forge/resources/tasks.py` against `POST /tasks/{id}/retry`.
@@ -12,7 +12,7 @@
 - **JS `retry()`** rewritten to catch the 409 and surface `TaskNotRetryable`; `dist/` rebuilt.
 - **Tests added:** JS `tests/tasks.test.ts` (success → `pending` + `retry_count++`, 409 → typed
   error) and Python `test_retry_task_resets_to_pending` / `test_retry_non_retryable_task_raises_typed_error`.
-- **READMEs** document the retry semantics + the new error; versions synced to 0.2.4 (JS had
+- **READMEs** document the retry semantics + the new error; versions synced to 0.2.5 (JS had
   drifted at 0.2.0). `.env.example` / compose note that retry needs a backend >= 0.2.4.
 
 ⚠️ **Still do not rely on `retry()` in production until the platform ships `POST /tasks/{id}/retry`.**
@@ -74,9 +74,9 @@ Coordinate the two PRs; bump the SDK version only after the platform deploy that
 
 # N1 — Missing resource: `pipelines`
 
-**Status:** ✅ Implemented in **0.2.4** (JS + Python). **Source:** consolidated issue list (N1).
+**Status:** ✅ Implemented in **0.2.5** (JS + Python). **Source:** consolidated issue list (N1).
 
-## Update (2026-08-28) — `pipelines` resource added in 0.2.4
+## Update (2026-08-28) — `pipelines` resource added in 0.2.5
 - **New resource, both clients:** `nf.pipelines` / `client.pipelines` with `list`, `get`,
   `create`, `update`, `delete`, `run`, `listRuns`/`list_runs`, `reportRun`/`report_run` — mirroring
   the platform routes below.

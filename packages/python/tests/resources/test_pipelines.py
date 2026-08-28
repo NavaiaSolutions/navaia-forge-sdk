@@ -102,6 +102,6 @@ def test_report_run(httpx_mock, client, base_url, run_payload) -> None:
         method="POST",
         json={**run_payload, "status": "done", "result": "ok"},
     )
-    run = client.pipelines.report_run("pl_1", {"status": "done", "result": "ok"})
+    run = client.pipelines.report_run("pl_1", status="done", result="ok")
     assert run.status == "done"
     assert run.result == "ok"

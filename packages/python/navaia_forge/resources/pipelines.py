@@ -95,12 +95,28 @@ class PipelinesResource(ResourceBase):
             ),
         )
 
-    def report_run(self, pipeline_id: str, report: dict[str, Any]) -> PipelineRun:
+    def report_run(
+        self,
+        pipeline_id: str,
+        *,
+        status: str,
+        result: str | None = None,
+        error: str | None = None,
+        metadata_json: dict[str, Any] | None = None,
+    ) -> PipelineRun:
         """Report an externally-executed run back to the platform (runner ingest).
 
         Used by out-of-band runners to record the outcome of a run they executed
-        themselves, rather than triggering one via :meth:`run`.
+        themselves, rather than triggering one via :meth:`run`. Fields mirror the
+        JS ``PipelineRunReport`` body; only provided fields are sent.
         """
+        body: dict[str, Any] = {"status": status}
+        if result is not None:
+            body["result"] = result
+        if error is not None:
+            body["error"] = error
+        if metadata_json is not None:
+            body["metadata_json"] = metadata_json
         return parse_model(
-            PipelineRun, self._http.post(f"/pipelines/{pipeline_id}/runs", report)
+            PipelineRun, self._http.post(f"/pipelines/{pipeline_id}/runs", body)
         )

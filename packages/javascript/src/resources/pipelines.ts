@@ -5,9 +5,8 @@
  * `/pipelines/{id}/runs`). Mirrors the Python `client.pipelines` resource.
  */
 
-import { del, get, patch, post } from "../http.js";
+import { del, get, getList, patch, post } from "../http.js";
 import type {
-  PaginatedResponse,
   Pipeline,
   PipelineCreate,
   PipelineRun,
@@ -23,31 +22,6 @@ export class PipelineResource {
     this.config = config;
   }
 
-  /**
-   * Unwrap a list endpoint that may return either a bare array or a
-   * `{ items, total }` envelope. Tolerant by design — the pipelines routes'
-   * exact response shape should be confirmed against the backend; until then
-   * this keeps the client robust to either form (matching the Python
-   * transport's `get_list`).
-   */
-  private async unwrapList<T>(
-    path: string,
-    params?: Record<string, string>,
-  ): Promise<T[]> {
-    const result = await get<T[] | PaginatedResponse<T> | null>(
-      this.config,
-      path,
-      params,
-    );
-    if (Array.isArray(result)) {
-      return result;
-    }
-    if (result && Array.isArray((result as PaginatedResponse<T>).items)) {
-      return (result as PaginatedResponse<T>).items;
-    }
-    return [];
-  }
-
   // ── CRUD ──────────────────────────────────────────────
 
   /** List pipelines, optionally scoped to a single workforce. */
@@ -55,7 +29,7 @@ export class PipelineResource {
     const path = workforceId
       ? `/workforces/${workforceId}/pipelines`
       : "/pipelines";
-    return this.unwrapList<Pipeline>(path);
+    return getList<Pipeline>(this.config, path);
   }
 
   /** Fetch a single pipeline by ID. */
@@ -96,7 +70,11 @@ export class PipelineResource {
     if (limit !== undefined) {
       params["limit"] = String(limit);
     }
-    return this.unwrapList<PipelineRun>(`/pipelines/${pipelineId}/runs`, params);
+    return getList<PipelineRun>(
+      this.config,
+      `/pipelines/${pipelineId}/runs`,
+      params,
+    );
   }
 
   /**
