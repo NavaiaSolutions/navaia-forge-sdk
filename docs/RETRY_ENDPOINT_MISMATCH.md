@@ -1,7 +1,7 @@
 # SDK ⇄ Platform Mismatch — `tasks.retry()` hits a non-existent route
 
 **Date:** 2026-08-27 · Source: NavaiaForge `PLATFORM-BUG-REPORT-2026-08-25` (§7)
-**Status:** ✅ SDK side fixed in **0.2.5** (JS + Python) — ⏳ still gated on the platform route.
+**Status:** ✅ SDK fixed (0.2.5) · ✅ **backend route confirmed live on the deployed `release` branch** (2026-08-28) — ungated. (Backend `main` did not yet have it at time of check; SDK depends on the deployed backend, so this is safe.)
 
 ## Update (2026-08-28) — SDK changes shipped in 0.2.5
 - **Python parity gap closed:** `client.tasks.retry()` did not exist at all (the README advertised
@@ -10,13 +10,21 @@
 - **Typed 409:** both clients now raise a typed `TaskNotRetryable` (exported from the package)
   instead of a bare 4xx when the task is not in a retryable state.
 - **JS `retry()`** rewritten to catch the 409 and surface `TaskNotRetryable`; `dist/` rebuilt.
-- **Tests added:** JS `tests/tasks.test.ts` (success → `pending` + `retry_count++`, 409 → typed
-  error) and Python `test_retry_task_resets_to_pending` / `test_retry_non_retryable_task_raises_typed_error`.
+- **Tests added:** JS `tests/tasks.test.ts` (success → `pending`, 409 → typed error) and Python
+  `test_retry_task_resets_to_pending` / `test_retry_non_retryable_task_raises_typed_error`.
 - **READMEs** document the retry semantics + the new error; versions synced to 0.2.5 (JS had
   drifted at 0.2.0). `.env.example` / compose note that retry needs a backend >= 0.2.4.
 
-⚠️ **Still do not rely on `retry()` in production until the platform ships `POST /tasks/{id}/retry`.**
-Until then the call 404s (surfaced as `NotFoundError`), exactly as before.
+### Correction (2026-08-28) — `retry_count` is RESET to 0, not incremented
+Verified against the deployed backend (`app/tasks/service.py::request_task_retry`): a **manual**
+retry is an operator override that resets `retry_count` to **0**, restoring the full automatic-retry
+budget — deliberately *not* sharing the auto-retry counter (which increments separately). The SDK
+READMEs and tests originally claimed `retry_count++`; both have been corrected to expect `0`. The
+SDK `retry()` method itself is unaffected (it just returns the task), and `TaskStatus` → `pending`
+holds. Backend route: `app/tasks/router.py::retry_task` — `POST /tasks/{task_id}/retry`, owner-only,
+409 (`TaskStateError`) when the task is not in `FAILED`/`CANCELLED`.
+
+✅ **Ungated:** the route is live on the deployed backend, so `retry()` works. Safe to publish the SDK.
 
 ## What's wrong
 The SDK exposes `tasks.retry(taskId)` which POSTs `/tasks/{taskId}/retry`, but the NavaiaForge

@@ -74,13 +74,13 @@ All resource methods return typed [Pydantic v2](https://docs.pydantic.dev/) mode
 
 ### Retrying a failed task
 
-`client.tasks.retry(task_id)` resets a `failed` or `cancelled` task back to `pending` and increments its `retry_count`. Only those two states are retryable — retrying a running or already-completed task raises `TaskNotRetryable`:
+`client.tasks.retry(task_id)` resets a `failed` or `cancelled` task back to `pending` and resets its `retry_count` to 0 (a manual retry restores the automatic-retry budget). Only those two states are retryable — retrying a running or already-completed task raises `TaskNotRetryable`:
 
 ```python
 from navaia_forge import TaskNotRetryable
 
 try:
-    task = client.tasks.retry(task.id)   # -> status="pending", retry_count += 1
+    task = client.tasks.retry(task.id)   # -> status="pending", retry_count reset to 0
 except TaskNotRetryable:
     ...  # still running or already succeeded — nothing to retry
 ```

@@ -36,16 +36,18 @@ describe("TaskResource.retry", () => {
     vi.restoreAllMocks();
   });
 
-  it("POSTs to /tasks/{id}/retry and returns a pending task", async () => {
+  it("POSTs to /tasks/{id}/retry and returns a re-queued task", async () => {
+    // Manual retry re-queues the task (pending) and resets retry_count to 0,
+    // restoring the auto-retry budget (matches backend request_task_retry).
     fetchMock.mockResolvedValueOnce(
-      jsonResponse(200, { ...TASK, status: "pending", retry_count: 1, error: null }),
+      jsonResponse(200, { ...TASK, status: "pending", retry_count: 0, error: null }),
     );
     const nf = new NavaiaForge({ apiKey: "nf_local", baseUrl: "http://local" });
 
     const task = await nf.tasks.retry("tk_1");
 
     expect(task.status).toBe("pending");
-    expect(task.retry_count).toBe(1);
+    expect(task.retry_count).toBe(0);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain("/api/v1/tasks/tk_1/retry");
     expect((init as RequestInit).method).toBe("POST");

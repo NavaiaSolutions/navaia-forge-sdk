@@ -91,13 +91,13 @@ All resource methods return typed results. Errors throw `NavaiaForgeError` (or a
 
 ### Retrying a failed task
 
-`nf.tasks.retry(taskId)` resets a `failed` or `cancelled` task back to `pending` and increments its `retry_count`. Only those two states are retryable — retrying a running or already-completed task throws `TaskNotRetryable`:
+`nf.tasks.retry(taskId)` resets a `failed` or `cancelled` task back to `pending` and resets its `retry_count` to 0 (a manual retry restores the automatic-retry budget). Only those two states are retryable — retrying a running or already-completed task throws `TaskNotRetryable`:
 
 ```ts
 import { TaskNotRetryable } from "navaia-forge";
 
 try {
-  const task = await nf.tasks.retry(task.id); // -> status "pending", retry_count += 1
+  const task = await nf.tasks.retry(task.id); // -> status "pending", retry_count reset to 0
 } catch (e) {
   if (e instanceof TaskNotRetryable) {
     // still running or already succeeded — nothing to retry
