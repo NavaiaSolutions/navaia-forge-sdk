@@ -91,13 +91,13 @@ All resource methods return typed results. Errors throw `NavaiaForgeError` (or a
 
 ### Retrying a failed task
 
-`nf.tasks.retry(taskId)` resets a `failed` or `cancelled` task back to `pending` and increments its `retry_count`. Only those two states are retryable — retrying a running or already-completed task throws `TaskNotRetryable`:
+`nf.tasks.retry(taskId)` resets a `failed` or `cancelled` task back to `pending` and resets its `retry_count` to 0 (a manual retry restores the automatic-retry budget). Only those two states are retryable — retrying a running or already-completed task throws `TaskNotRetryable`:
 
 ```ts
 import { TaskNotRetryable } from "navaia-forge";
 
 try {
-  const task = await nf.tasks.retry(task.id); // -> status "pending", retry_count += 1
+  const task = await nf.tasks.retry(task.id); // -> status "pending", retry_count reset to 0
 } catch (e) {
   if (e instanceof TaskNotRetryable) {
     // still running or already succeeded — nothing to retry
@@ -138,11 +138,13 @@ ws.connect();
 | `nf.conversations` | Open chats, send messages targeted at agents | Build chat UIs / interactive assistants |
 | `nf.knowledge` | Knowledge bases, document upload, semantic `search`, `featured`, download | Ground agents in your data via RAG |
 | `nf.templates` | Workforce templates + `templates.agents` for agent templates | Don't rebuild the same team twice |
+| `nf.marketplace` | `list`, `get`, `install` | Browse and install published workforces |
 | `nf.tools` | Full CRUD, `listFeatured`, attach/detach to workforces | Give the team hands (HTTP, MCP, code-exec, custom) |
 | `nf.integrations` | `list`, `listPlugins`, CRUD | Connect Slack / GitHub / Linear / other plugins |
 | `nf.setup` | `options`, `validate`, `complete` | First-run onboarding / provider configuration |
 | `nf.observability` | `summary`, `cost`, `agentMetrics`, `agentEvaluations`, `logTokenUsage` | See what the team is doing and what it costs |
 | `nf.auth` | `me`, `register`, `login`, `refresh`, `createKey`, `validate`, OAuth URL helpers | Build your own UI on top of NavaiaForge |
+| `nf.sync` | `exportBundle`, `importBundle`, `push`, `pull` | Two-way local ↔ cloud workforce sync |
 
 ## LangGraph integration
 

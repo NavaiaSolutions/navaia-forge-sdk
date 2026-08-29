@@ -135,16 +135,17 @@ def test_reject_task(httpx_mock, client, base_url, task_payload) -> None:
 
 @pytest.mark.integration
 def test_retry_task_resets_to_pending(httpx_mock, client, base_url, task_payload) -> None:
-    # A previously failed task, retried, comes back pending with retry_count bumped.
+    # A manual retry re-queues the task (pending) and resets retry_count to 0,
+    # restoring the automatic-retry budget (matches backend request_task_retry).
     httpx_mock.add_response(
         url=f"{base_url}/api/v1/tasks/tk_1/retry",
         method="POST",
-        json={**task_payload, "status": "pending", "retry_count": 1, "error": None},
+        json={**task_payload, "status": "pending", "retry_count": 0, "error": None},
     )
     task = client.tasks.retry("tk_1")
     assert isinstance(task, Task)
     assert task.status == "pending"
-    assert task.retry_count == 1
+    assert task.retry_count == 0
 
 
 @pytest.mark.integration

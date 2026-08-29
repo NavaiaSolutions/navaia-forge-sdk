@@ -58,6 +58,8 @@ from .types import (
     RLEvaluation,
     SearchResponse,
     SearchResult,
+    SetupOptions,
+    SetupValidateResult,
     SyncEntityCounts,
     SyncImportResult,
     Task,
@@ -67,8 +69,10 @@ from .types import (
     TemplateInstantiateResult,
     TokenPair,
     TokenUsage,
+    Tool,
     ToolCall,
     User,
+    WorkforceToolLink,
     Workforce,
     WorkforceCreate,
     WorkforceFull,
@@ -84,7 +88,7 @@ from .types import (
 )
 from .websocket import NavaiaForgeWs
 
-__version__ = "0.2.5"
+__version__ = "0.2.6"
 
 __all__ = [
     "Agent",
@@ -125,6 +129,8 @@ __all__ = [
     "SearchResponse",
     "SearchResult",
     "ServerError",
+    "SetupOptions",
+    "SetupValidateResult",
     "SyncConflictError",
     "SyncEntityCounts",
     "SyncImportResult",
@@ -137,6 +143,7 @@ __all__ = [
     "TimeoutError",
     "TokenPair",
     "TokenUsage",
+    "Tool",
     "ToolCall",
     "User",
     "ValidationError",
@@ -144,6 +151,7 @@ __all__ = [
     "WorkforceCreate",
     "WorkforceFull",
     "WorkforceSyncBundle",
+    "WorkforceToolLink",
     "WorkforceTemplate",
     "WorkforceTemplateCreate",
     "WorkforceUpdate",

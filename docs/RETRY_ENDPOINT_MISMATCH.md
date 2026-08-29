@@ -1,7 +1,7 @@
 # SDK ⇄ Platform Mismatch — `tasks.retry()` hits a non-existent route
 
 **Date:** 2026-08-27 · Source: NavaiaForge `PLATFORM-BUG-REPORT-2026-08-25` (§7)
-**Status:** ✅ SDK side fixed in **0.2.5** (JS + Python) — ⏳ still gated on the platform route.
+**Status:** ✅ SDK fixed (0.2.5) · ✅ **backend route confirmed live on the deployed `release` branch** (2026-08-28) — ungated. (Backend `main` did not yet have it at time of check; SDK depends on the deployed backend, so this is safe.)
 
 ## Update (2026-08-28) — SDK changes shipped in 0.2.5
 - **Python parity gap closed:** `client.tasks.retry()` did not exist at all (the README advertised
@@ -10,13 +10,21 @@
 - **Typed 409:** both clients now raise a typed `TaskNotRetryable` (exported from the package)
   instead of a bare 4xx when the task is not in a retryable state.
 - **JS `retry()`** rewritten to catch the 409 and surface `TaskNotRetryable`; `dist/` rebuilt.
-- **Tests added:** JS `tests/tasks.test.ts` (success → `pending` + `retry_count++`, 409 → typed
-  error) and Python `test_retry_task_resets_to_pending` / `test_retry_non_retryable_task_raises_typed_error`.
+- **Tests added:** JS `tests/tasks.test.ts` (success → `pending`, 409 → typed error) and Python
+  `test_retry_task_resets_to_pending` / `test_retry_non_retryable_task_raises_typed_error`.
 - **READMEs** document the retry semantics + the new error; versions synced to 0.2.5 (JS had
   drifted at 0.2.0). `.env.example` / compose note that retry needs a backend >= 0.2.4.
 
-⚠️ **Still do not rely on `retry()` in production until the platform ships `POST /tasks/{id}/retry`.**
-Until then the call 404s (surfaced as `NotFoundError`), exactly as before.
+### Correction (2026-08-28) — `retry_count` is RESET to 0, not incremented
+Verified against the deployed backend (`app/tasks/service.py::request_task_retry`): a **manual**
+retry is an operator override that resets `retry_count` to **0**, restoring the full automatic-retry
+budget — deliberately *not* sharing the auto-retry counter (which increments separately). The SDK
+READMEs and tests originally claimed `retry_count++`; both have been corrected to expect `0`. The
+SDK `retry()` method itself is unaffected (it just returns the task), and `TaskStatus` → `pending`
+holds. Backend route: `app/tasks/router.py::retry_task` — `POST /tasks/{task_id}/retry`, owner-only,
+409 (`TaskStateError`) when the task is not in `FAILED`/`CANCELLED`.
+
+✅ **Ungated:** the route is live on the deployed backend, so `retry()` works. Safe to publish the SDK.
 
 ## What's wrong
 The SDK exposes `tasks.retry(taskId)` which POSTs `/tasks/{taskId}/retry`, but the NavaiaForge
@@ -142,3 +150,31 @@ Mirror the REST surface, following the existing `tasks` resource as the template
 
 ⚠️ Ship after confirming the platform response shapes (`app/pipelines/schemas.py`) so the SDK types
 match exactly.
+
+---
+
+# N2 — Python missing `tools` + `setup` resources (README/parity gap)
+
+**Status:** ✅ Fixed in **0.2.6** (Python). **Source:** README accuracy audit (2026-08-28).
+
+## What was wrong
+The Python README advertised `client.tools` and `client.setup`, but the Python SDK had **neither
+resource** — no `resources/tools.py` / `resources/setup.py`, and the client never registered them.
+So `client.tools` / `client.setup` raised **`AttributeError`** (same bug class as `tasks.retry()`).
+JS had both (`nf.tools`, `nf.setup`). Separately, **both** READMEs' resource tables omitted
+`marketplace` and `sync`, which *do* exist in both clients (undocumented, opposite direction).
+
+## What was fixed (0.2.6)
+- **New Python resources** `client.tools` (list, list_featured, get, create, update, delete,
+  list_workforce_tools, attach_to_workforce, detach_from_workforce) and `client.setup`
+  (options, validate, complete) — mirroring the JS resources. Registered on the client.
+- **New Python types** `Tool`, `WorkforceToolLink`, `SetupOptions`, `SetupValidateResult`
+  (mirroring `types.ts`), exported from the package.
+- **README accuracy (both SDKs):** added the missing `marketplace` and `sync` rows so the resource
+  tables now list every namespace the client actually exposes. Python `tools`/`setup` rows are now
+  backed by real code.
+- **Tests:** Python `test_tools.py` + `test_setup.py`. Python client now exposes all 14 namespaces,
+  matching JS.
+
+> Same "confirm field shapes vs backend schema" caveat applies to `Tool` / `SetupOptions` /
+> `SetupValidateResult` — mirrored from `types.ts`, permissive (unknown fields ignored).
